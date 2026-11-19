@@ -60,10 +60,11 @@
   system's reduce-motion setting (#264, [Vasilispapg](https://github.com/Vasilispapg)).
 
 **Agent**
-- macOS: when a shortcut cannot press keys, the message on the phone says what helps after an update (remove
-  PhoneBoxAgent under Accessibility and add it again), and the setup script says it when it updates the agent. macOS
-  ties the permission to the exact build of the ad hoc signed agent (#269,
-  [nejcbat-x](https://github.com/nejcbat-x)).
+- macOS: the Accessibility permission (shortcuts that press keys) carries over to later updates. The agent is signed
+  with PhoneBox's own certificate instead of ad hoc, whose signature changed with every build, so macOS dropped the
+  permission after every update. Updating from an older version needs it once more: remove PhoneBoxAgent under
+  System Settings › Privacy & Security › Accessibility with − and add it again. The setup script and the message on
+  the phone say so (#269, [nejcbat-x](https://github.com/nejcbat-x)).
 - Shortcuts that press keys can use the keypad: `numpad0` to `numpad9`, `numpadenter`, `numpadadd`, `numpadsubtract`,
   `numpadmultiply`, `numpaddivide` and `numpaddecimal` (also written `num3`, `kp3` or `KP_3`), sent as the keypad's own
   keys, so a shortcut bound to Ctrl+Alt+Numpad3 in Discord or a game is matched (#270,

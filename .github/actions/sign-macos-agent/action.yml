@@ -52,6 +52,6 @@ runs:
         requirement="$(codesign -d -r- "$BINARY" 2>&1 | sed -n 's/^designated => //p')"
         echo "Designated requirement: $requirement"
         case "$requirement" in
-          *'identifier "net.oxog.phonebox.agent"'*'certificate root = H"'*) ;;
+          *'identifier "net.oxog.phonebox.agent"'*'certificate leaf = H"'* | *'identifier "net.oxog.phonebox.agent"'*'certificate root = H"'*) ;;
           *) echo "::error::unexpected designated requirement: $requirement"; exit 1 ;;
         esac
