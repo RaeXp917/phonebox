@@ -145,6 +145,10 @@ jobs:
           requirement="$(codesign -d -r- out/PhoneBoxAgent 2>&1 | sed -n 's/^designated => //p')"
           echo "Designated requirement: $requirement"
           codesign --verify --verbose=2 -R="$requirement" "$RUNNER_TEMP/other-build"
+          # and an ad hoc signature (what releases had before) does not, or the check above proves nothing
+          cp "$RUNNER_TEMP/other-build" "$RUNNER_TEMP/adhoc-build"
+          codesign --force --sign - --identifier net.oxog.phonebox.agent "$RUNNER_TEMP/adhoc-build"
+          if codesign --verify -R="$requirement" "$RUNNER_TEMP/adhoc-build" 2>/dev/null; then echo "::error::an ad hoc build satisfies the requirement"; exit 1; fi
       - name: Smoke test the single-file agent (Windows)
         if: matrix.rid == 'win-x64'
         shell: pwsh
