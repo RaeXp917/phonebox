@@ -61,6 +61,8 @@ public static class Shortcuts
     {
         try
         {
+            // a key that opens an app on the phone has nothing to run here; the panel starts it itself
+            if (sc.Launch is not null) return "This key opens an app on the phone; it does not run anything on this computer";
             switch (sc.Cmd)
             {
                 case "builtin:keys":

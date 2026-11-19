@@ -14,6 +14,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.net.Uri
 import android.os.BatteryManager
 import android.os.SystemClock
 import android.os.Bundle
@@ -315,6 +316,15 @@ class MainActivity : Activity(), SensorEventListener {
 
         private val validTrackpadTypes = setOf("move", "click", "rightClick", "mousedown", "mouseup", "scroll", "hscroll")
 
+        /**
+         * The apps a shortcut may open, by the key the agent stores in the shortcut's `launch` field.
+         * An allow-list on purpose: adding an app here is a code change, so no configuration or web
+         * content can widen what the panel is able to start.
+         */
+        private val appLaunchers = mapOf(
+            "miremote" to "miremote://home/controller",
+        )
+
         @JavascriptInterface
         fun trackpad(key: String, type: String, dx: Float, dy: Float, delta: Float) {
             if (!ok(key) || type !in validTrackpadTypes) return
@@ -423,10 +433,24 @@ class MainActivity : Activity(), SensorEventListener {
             }
         }
 
+        /**
+         * Opens an app on this phone for a shortcut whose `launch` key names one. The key is looked up here,
+         * so the panel can never pass a URL or an arbitrary intent: web content cannot start anything this
+         * app does not ship with. False when the key is unknown or the app is not installed.
+         */
+        @JavascriptInterface
+        fun openApp(key: String, app: String): Boolean {
+            if (!ok(key)) return false
+            val uri = appLaunchers[app] ?: return false
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (intent.resolveActivity(packageManager) == null) return false
+            runOnUiThread { try { startActivity(intent) } catch (_: Exception) {} }
+            return true
+        }
+
         /** The computers this phone is paired with (for switching over Wi-Fi). */
         @JavascriptInterface
         fun pcs(key: String): String = if (ok(key)) link.pcsJson() else "[]"
-
         /** Switches to another paired computer and reloads the panel from it. */
         @JavascriptInterface
         fun selectPc(key: String, id: String) {

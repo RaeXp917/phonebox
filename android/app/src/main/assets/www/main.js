@@ -35,7 +35,7 @@ export const $ = (id) => document.getElementById(id);
 // The native bridge (window.Android) is in every frame, sandboxed widgets included, so each call carries a key that only
 // the panel's own frames receive (MainActivity.bridgeKey). This wrapper adds it.
 const BRIDGE = ['battery', 'buzz', 'haptic', 'is24Hour', 'pcs', 'selectPc', 'forgetPc', 'setBrightness', 'setHomeScreen', 'setOrientation',
-  'setPinned', 'setVolumeKeys', 'transport', 'sensors', 'version', 'canListen', 'listen', 'stopListening', 'cancelListening', 'trackpad'];
+  'setPinned', 'setVolumeKeys', 'transport', 'sensors', 'version', 'canListen', 'listen', 'stopListening', 'cancelListening', 'trackpad', 'openApp'];
 export const bridge = typeof Android === 'undefined' ? null : Object.fromEntries(BRIDGE.filter((m) => typeof Android[m] === 'function')
   .map((m) => [m, (...args) => Android[m](window.__phoneboxKey || '', ...args)]));
 // Live preview inside the agent's layout editor: the layout comes from the editor (unsaved), not from the agent.
@@ -678,6 +678,18 @@ export function renderStatus(el, o = {}) {
 
 // ---------------------------------------------------------------- shortcuts
 export async function runShortcut(btn, id) {
+  const s = (cfg.shortcuts || []).find((x) => x.id === id);
+
+  // A phone-side app opens here, on the phone. It must never go to the agent: that would run on the
+  // computer and needs it to be awake and reachable.
+  if (s?.launch) {
+    haptic();
+    btn.classList.remove('ok', 'err');
+    const opened = typeof bridge?.openApp === 'function' && bridge.openApp(s.launch) === true;
+    btn.classList.add(opened ? 'ok' : 'err');
+    setTimeout(() => btn.classList.remove('ok', 'err'), 900);
+    return;
+  }
   haptic();
   btn.classList.remove('ok', 'err');
   btn.classList.add('busy');

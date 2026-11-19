@@ -78,7 +78,7 @@ public sealed class AgentConfig
         shortcuts = Shortcuts.Select(s =>
         {
             var pic = shortcutIcon?.Invoke(s);
-            return new { s.Id, s.Label, s.Icon, s.Color, toggle = s.Toggle || s.Cmd == "builtin:mute", iconRev = pic?.Rev, iconUpload = pic?.Upload == true };
+            return new { s.Id, s.Label, s.Icon, s.Color, toggle = s.Toggle || s.Cmd == "builtin:mute", launch = s.Launch, iconRev = pic?.Rev, iconUpload = pic?.Upload == true };
         }),
         // names only (for the Rules widget); what a rule matches on stays here
         rules = Rules.Select(r => new { r.Id, r.Name, r.Enabled, r.When }),
@@ -406,6 +406,12 @@ public sealed class Shortcut
     /// <summary>For toggles: the command (and arguments) that switch it off; empty = the same as switching on.</summary>
     public string? OffCmd { get; set; }
     public string? OffArgs { get; set; }
+    /// <summary>
+    /// Open an app on the phone instead of doing something on this computer: a key the Android app knows
+    /// ("miremote"). The panel never sends a URL, so web content cannot start arbitrary intents. Empty = a
+    /// PC action, as before.
+    /// </summary>
+    public string? Launch { get; set; }
 }
 
 /// <summary>Reads/writes config.json; external edits are picked up on the next request.</summary>
@@ -499,7 +505,7 @@ public sealed partial class ConfigStore(string path)
         var staleIds = Get().Shortcuts.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
         cfg = Normalize(cfg, staleIds);
         foreach (var s in cfg.Shortcuts)
-            if (string.IsNullOrWhiteSpace(s.Cmd)) return $"Shortcut '{s.Label}' has no command";
+            if (string.IsNullOrWhiteSpace(s.Cmd) && s.Launch is null) return $"Shortcut '{s.Label}' has no command";
         if (cfg.Console.Profiles.Count > AppConsole.MaxProfiles) return $"The app console has more than {AppConsole.MaxProfiles} apps";
         foreach (var p in cfg.Console.Profiles)
             if (AppConsole.Validate(p) is { } consoleError) return consoleError;
@@ -615,6 +621,10 @@ public sealed partial class ConfigStore(string path)
             if (string.IsNullOrWhiteSpace(s.StateKey)) s.StateKey = null;
             if (string.IsNullOrWhiteSpace(s.OffCmd)) s.OffCmd = null;
             if (string.IsNullOrWhiteSpace(s.OffArgs)) s.OffArgs = null;
+            // a phone-side app is a key the Android app knows, never a URL: anything else would let the
+            // panel start arbitrary intents on the phone
+            s.Launch = string.IsNullOrWhiteSpace(s.Launch) ? null
+                : AppLaunchId().IsMatch(s.Launch.Trim()) ? s.Launch.Trim().ToLowerInvariant() : null;
         }
         c.Phones = (c.Phones ?? []).Where(p => p is not null && !string.IsNullOrWhiteSpace(p.Id)).GroupBy(p => p.Id).Select(g => g.First()).Take(20).ToList();
         foreach (var ph in c.Phones)
@@ -874,6 +884,10 @@ public sealed partial class ConfigStore(string path)
 
     [GeneratedRegex("^[a-z0-9]{6,32}$")]
     private static partial Regex CameraId();
+
+    /// <summary>A phone-side app key: lowercase letters, digits and dashes, at most 32 characters.</summary>
+    [GeneratedRegex("^[a-z][a-z0-9-]{0,31}$")]
+    private static partial Regex AppLaunchId();
 }
 
 public sealed class CodexBarConfig

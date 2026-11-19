@@ -303,6 +303,57 @@ public class ConfigTests
         Assert.Equal(1440, c.Rules[0].Value);
         Assert.Equal("info", c.Rules[0].Level);
     }
+
+    // A key that opens an app on the phone has no command: it is the phone that starts the app, so the
+    // computer must not be asked to run anything. The value is a plain key, never a URL.
+    [Fact]
+    public void ShortcutWithLaunchNeedsNoCommandAndReachesThePhone()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"phonebox-cfg-{Guid.NewGuid():N}.json");
+        try
+        {
+            var store = new ConfigStore(path);
+            Assert.Null(store.Save("""{"shortcuts":[{"id":"remotes","label":"Remotes","launch":"miremote"}]}"""));
+
+            var saved = store.Get().Shortcuts.Single();
+            Assert.Equal("miremote", saved.Launch);
+            Assert.True(string.IsNullOrEmpty(saved.Cmd), "a phone-side key runs nothing here");
+
+            var phone = JsonSerializer.SerializeToElement(store.Get().ToPublic(), ConfigStore.WriteOpts)
+                .GetProperty("shortcuts")[0];
+            Assert.Equal("miremote", phone.GetProperty("launch").GetString());
+            Assert.NotEqual(JsonValueKind.String, phone.TryGetProperty("cmd", out var cmd) ? cmd.ValueKind : JsonValueKind.Null);
+        }
+        finally
+        {
+            File.Delete(path);
+            File.Delete(path + ".bak");
+        }
+    }
+
+    // Anything that is not a plain lowercase key is no launch at all, and a shortcut with neither a
+    // launch nor a command is still refused: no half-working key reaches the phone.
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("miremote://home/controller")]
+    [InlineData("MIREMOTE")]
+    [InlineData("")]
+    public void AnInvalidLaunchIsDroppedAndTheKeyStillNeedsACommand(string launch)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"phonebox-cfg-{Guid.NewGuid():N}.json");
+        try
+        {
+            var store = new ConfigStore(path);
+            var json = JsonSerializer.Serialize(new { shortcuts = new[] { new { id = "x", label = "X", launch } } });
+            Assert.NotNull(store.Save(json));
+            Assert.Empty(store.Get().Shortcuts);
+        }
+        finally
+        {
+            File.Delete(path);
+            File.Delete(path + ".bak");
+        }
+    }
 }
 
 public class LanTests
