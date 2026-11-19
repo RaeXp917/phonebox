@@ -12,12 +12,17 @@
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>
+        <!-- Shortcuts that open an app on the phone look the target up first, and Android 11+ hides other apps -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="miremote" />
+        </intent>
     </queries>
 
     <application
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
-        android:label="PhoneBox"
+        android:label="${appLabel}"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.DeskPanel">
@@ -69,7 +74,7 @@
             android:enabled="@bool/quick_settings_tile"
             android:exported="true"
             android:icon="@drawable/ic_tile"
-            android:label="PhoneBox"
+            android:label="${appLabel}"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             tools:targetApi="n">
             <intent-filter>

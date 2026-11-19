@@ -44,6 +44,9 @@ public sealed class AgentConfig
     /// <summary>App console widget: key and dial bindings per app (the phone gets labels and ids, not the keys to press).</summary>
     public ConsoleConfig Console { get; set; } = new();
 
+    /// <summary>The Android app the agent opens over USB: the official package, or a side-by-side build's package.</summary>
+    public string? AppPackage { get; set; }
+
     /// <summary>The pages a phone shows: its own selection (Settings › Phones), or all of them.</summary>
     public IEnumerable<PageConfig> PagesFor(string? deviceId)
     {
@@ -538,6 +541,9 @@ public sealed partial class ConfigStore(string path)
     {
         c.Weather ??= new();
         c.Weather.Unit = WeatherUnitJsonConverter.Normalize(c.Weather.Unit);
+        // the app the agent opens over USB: a package id or nothing (never a component or a command)
+        c.AppPackage = string.IsNullOrWhiteSpace(c.AppPackage) ? null
+            : AppPackageId().IsMatch(c.AppPackage.Trim()) ? c.AppPackage.Trim() : null;
         c.Weather.Model = WeatherModelJsonConverter.Normalize(c.Weather.Model);
         c.CodexBar ??= new();
         c.CodexBar.Providers = (c.CodexBar.Providers ?? []).Where(p => p is "claude" or "codex" or "antigravity").Distinct().ToArray();
@@ -888,6 +894,10 @@ public sealed partial class ConfigStore(string path)
     /// <summary>A phone-side app key: lowercase letters, digits and dashes, at most 32 characters.</summary>
     [GeneratedRegex("^[a-z][a-z0-9-]{0,31}$")]
     private static partial Regex AppLaunchId();
+
+    /// <summary>An Android package id, e.g. net.oxog.phonebox.deskpanel.fork.</summary>
+    [GeneratedRegex(@"^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$")]
+    private static partial Regex AppPackageId();
 }
 
 public sealed class CodexBarConfig

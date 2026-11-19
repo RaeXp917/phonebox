@@ -243,7 +243,7 @@ public sealed class UpdateService(ConfigStore cfg, AdbReverse adb, IHostApplicat
                 continue;
             }
             log.LogInformation("phone app on {Serial} updated to {Version}", serial, _latest.Version);
-            try { await Run(adbExe, ["-s", serial, "shell", "am", "start", "-n", AdbReverse.PanelActivity], ct); }
+            try { await Run(adbExe, ["-s", serial, "shell", "am", "start", "-n", adb.PanelActivity], ct); }
             catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {
                 log.LogInformation("{Serial}: could not open the panel after the update ({Msg})", serial, ex.Message); // updated anyway

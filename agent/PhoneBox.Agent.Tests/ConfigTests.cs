@@ -304,9 +304,22 @@ public class ConfigTests
         Assert.Equal("info", c.Rules[0].Level);
     }
 
+    // The app the agent wakes is a plain package id: a component path or a command is dropped, so the setting
+    // can never turn the agent into a command runner.
+    [Theory]
+    [InlineData("net.oxog.phonebox.deskpanel.fork", "net.oxog.phonebox.deskpanel.fork")]
+    [InlineData("  net.oxog.phonebox.fork  ", "net.oxog.phonebox.fork")]
+    [InlineData("net.oxog.phonebox.deskpanel/.MainActivity", null)]
+    [InlineData("com.foo", "com.foo")]
+    [InlineData("", null)]
+    public void AppPackageIsAPlainPackageId(string value, string? expected)
+    {
+        var c = Load(JsonSerializer.Serialize(new { appPackage = value }));
+        Assert.Equal(expected, c.AppPackage);
+    }
+
     // A key that opens an app on the phone has no command: it is the phone that starts the app, so the
-    // computer must not be asked to run anything. The value is a plain key, never a URL.
-    [Fact]
+    // computer must not be asked to run anything. The value is a plain key, never a URL.    [Fact]
     public void ShortcutWithLaunchNeedsNoCommandAndReachesThePhone()
     {
         var path = Path.Combine(Path.GetTempPath(), $"phonebox-cfg-{Guid.NewGuid():N}.json");

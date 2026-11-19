@@ -15,6 +15,11 @@ android {
 
     defaultConfig {
         applicationId = "net.oxog.phonebox.deskpanel"
+        // A side-by-side build keeps the official app installed: -PphoneboxSuffix=.fork gives the copy its own
+        // package id, so the two have separate settings, pairing and launcher entries.
+        val suffix = (project.findProperty("phoneboxSuffix") as String?)?.trim().orEmpty()
+        if (suffix.isNotEmpty()) applicationIdSuffix = suffix
+        manifestPlaceholders["appLabel"] = if (suffix.isEmpty()) "PhoneBox" else "PhoneBox fork"
         minSdk = 21 // Android 5.0; see CONTRIBUTING.md before changing it
         targetSdk = 35
         versionCode = 44

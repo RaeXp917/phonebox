@@ -9,8 +9,15 @@ namespace PhoneBox.Agent;
 /// </summary>
 public sealed class AdbReverse(ConfigStore cfg, ILogger<AdbReverse> log, AgentEndpoint? endpoint = null) : BackgroundService
 {
-    public const string PanelActivity = "net.oxog.phonebox.deskpanel/.MainActivity";
-    private const string HomeAlias = "net.oxog.phonebox.deskpanel/.HomeAlias";
+    public const string DefaultPackage = "net.oxog.phonebox.deskpanel";
+    /// <summary>Activity classes keep the project namespace even when the application id differs (a side-by-side build),
+    /// so the component is always "&lt;app id&gt;/&lt;class&gt;".</summary>
+    private const string ActivityClass = "net.oxog.phonebox.deskpanel.MainActivity";
+    private const string HomeAliasClass = "net.oxog.phonebox.deskpanel.HomeAlias";
+    /// <summary>The Android app the agent wakes and opens: the official app, or a side-by-side build's package.</summary>
+    public string AppPackage => (cfg.Get().AppPackage ?? "").Trim() is { Length: > 0 } app ? app : DefaultPackage;
+    public string PanelActivity => $"{AppPackage}/{ActivityClass}";
+    private string HomeAlias => $"{AppPackage}/{HomeAliasClass}";
     private readonly HashSet<string> _homeSet = [];
     private readonly HashSet<string> _awakeSet = [];
     private volatile string[] _missingApp = [];
@@ -147,7 +154,7 @@ public sealed class AdbReverse(ConfigStore cfg, ILogger<AdbReverse> log, AgentEn
             var ruled = HasOwnRule(list);
             if (ruled && !_missingApp.Contains(d)) continue;
             // is the app there at all? (the agent may have been installed on its own, with winget or Scoop)
-            var installed = (await Adb(adb, $"-s {d} shell pm path net.oxog.phonebox.deskpanel", ct, anyExit: true)).Contains("package:");
+            var installed = (await Adb(adb, $"-s {d} shell pm path {AppPackage}", ct, anyExit: true)).Contains("package:");
             _missingApp = installed ? _missingApp.Where(x => x != d).ToArray() : _missingApp.Union([d]).ToArray();
             if (!installed) { Report($"{d}: the PhoneBox app is not installed (Settings › General › Install the phone app)"); continue; }
             if (ruled) continue;
