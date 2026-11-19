@@ -19,6 +19,7 @@ import android.os.BatteryManager
 import android.os.SystemClock
 import android.os.Bundle
 import android.os.Build
+import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.text.format.DateFormat
@@ -38,6 +39,9 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebChromeClient
 import android.webkit.WebViewClient
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
@@ -74,8 +78,17 @@ class MainActivity : Activity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // A start from the agent (the computer came back) may bring the panel up while the phone sleeps;
+        // these let that start turn the display on instead of only lighting the activity underneath.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
         link = AgentLink(this)
         stream = AgentStream(link) { event, data ->
+            // Runs on the stream's own thread, so it still works while the screen is off and the panel's
+            // JavaScript is paused: a reconnect after the computer returns wakes the display.
+            wakeForReturningComputer()
             val js = "window.onAgentStream && window.onAgentStream(${JSONObject.quote(event)}, ${JSONObject.quote(data)})"
             runOnUiThread { if (!destroyed) web.evaluateJavascript(js, null) }
         }
@@ -125,6 +138,52 @@ class MainActivity : Activity(), SensorEventListener {
         web.loadUrl("https://$ASSET_HOST/assets/www/index.html")
         hideSystemUi()
         handlePairingLink(intent)
+    }
+
+    private var wakeLock: PowerManager.WakeLock? = null
+
+    private val probeExec = Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "phonebox-wake-probe").apply { isDaemon = true }
+    }
+    private var probeTask: ScheduledFuture<*>? = null
+
+    /**
+     * While the panel is dark (screen off) the WebView is paused and the live stream is stopped, so nothing
+     * would notice the computer coming back. One cheap local request every 20 s does, and it runs on USB or
+     * Wi-Fi alike; it stops the moment the panel is visible again.
+     */
+    private fun startWakeProbe() {
+        if (probeTask != null || destroyed) return
+        probeTask = probeExec.scheduleWithFixedDelay({
+            if (destroyed) return@scheduleWithFixedDelay
+            val reply = try { link.request("GET", "/api/info") } catch (_: Exception) { null }
+            val up = reply?.let { r -> try { r.body.close() } catch (_: Exception) { }; r.code == 200 } ?: false
+            if (up) { stopWakeProbe(); runOnUiThread { wakeForReturningComputer() } }
+        }, 5, 20, TimeUnit.SECONDS)
+    }
+
+    private fun stopWakeProbe() { probeTask?.cancel(false); probeTask = null }
+
+    /**
+     * The panel goes dark while the computer is off (see the panel's offline timer), so this is what brings
+     * it back: a short full-brightness lock that turns the display on, then the window keeps it on again.
+     * Called from the stream thread, which keeps running while the WebView is paused.
+     */
+    private fun wakeForReturningComputer() {
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (pm.isInteractive) return
+            runOnUiThread {
+                if (destroyed) return@runOnUiThread
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                try {
+                    wakeLock?.let { if (it.isHeld) it.release() }
+                    wakeLock = pm.newWakeLock(
+                        PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "phonebox:pc-return"
+                    ).apply { acquire(8000) }
+                } catch (_: Exception) { }
+            }
+        } catch (_: Exception) { }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -235,6 +294,7 @@ class MainActivity : Activity(), SensorEventListener {
         web.onResume()
         web.evaluateJavascript("window.onAppPause && window.onAppPause(false)", null) // the panel catches up at once
         stream.start()
+        stopWakeProbe()
         hideSystemUi()
         sensors?.getDefaultSensor(Sensor.TYPE_LIGHT)?.let { sensors?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
         sensors?.getDefaultSensor(Sensor.TYPE_PROXIMITY)?.let { sensors?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
@@ -251,6 +311,7 @@ class MainActivity : Activity(), SensorEventListener {
         dictation.cancel(0) // the microphone is never left open behind another app or a dark screen
         sensors?.unregisterListener(this)
         stream.stop()
+        startWakeProbe()
         // WebView.onPause() leaves JavaScript running: tell the panel to stop polling and refreshing while nobody sees it
         web.evaluateJavascript("window.onAppPause && window.onAppPause(true)", null)
         web.onPause()
@@ -434,18 +495,40 @@ class MainActivity : Activity(), SensorEventListener {
         }
 
         /**
+         * Keeps the display on while the computer is reachable, and lets it time out when it is gone
+         * (the panel calls this after a minute offline), so an unused panel does not drain the battery.
+         */
+        @JavascriptInterface
+        fun keepAwake(key: String, on: Boolean) {
+            if (!ok(key)) return
+            runOnUiThread {
+                if (on) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+
+        /**
          * Opens an app on this phone for a shortcut whose `launch` key names one. The key is looked up here,
          * so the panel can never pass a URL or an arbitrary intent: web content cannot start anything this
          * app does not ship with. False when the key is unknown or the app is not installed.
          */
         @JavascriptInterface
         fun openApp(key: String, app: String): Boolean {
-            if (!ok(key)) return false
-            val uri = appLaunchers[app] ?: return false
+            if (!ok(key)) { Log.w("PhoneBoxIr", "openApp: bridge key rejected"); return false }
+            val uri = appLaunchers[app] ?: run { Log.w("PhoneBoxIr", "openApp: unknown app '$app'"); return false }
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            if (intent.resolveActivity(packageManager) == null) return false
-            runOnUiThread { try { startActivity(intent) } catch (_: Exception) {} }
-            return true
+            // No resolveActivity() pre-check: with package visibility the lookup can come back empty while the
+            // system would still start the app. A target that is really missing throws here instead.
+            return try {
+                runOnUiThread {
+                    try { startActivity(intent); Log.i("PhoneBoxIr", "openApp $app -> $uri") }
+                    catch (e: Exception) { Log.w("PhoneBoxIr", "openApp $app failed: $e") }
+                }
+                true
+            } catch (e: Exception) {
+                Log.w("PhoneBoxIr", "openApp $app failed: $e")
+                false
+            }
         }
 
         /** The computers this phone is paired with (for switching over Wi-Fi). */

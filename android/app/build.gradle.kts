@@ -24,6 +24,8 @@ android {
         targetSdk = 35
         versionCode = 44
         versionName = "0.9.23"
+        // a side-by-side build needs a higher version code to install over its previous copy
+        (project.findProperty("phoneboxVersionCode") as String?)?.toIntOrNull()?.let { versionCode = it }
     }
 
     signingConfigs {

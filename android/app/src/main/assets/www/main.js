@@ -35,7 +35,7 @@ export const $ = (id) => document.getElementById(id);
 // The native bridge (window.Android) is in every frame, sandboxed widgets included, so each call carries a key that only
 // the panel's own frames receive (MainActivity.bridgeKey). This wrapper adds it.
 const BRIDGE = ['battery', 'buzz', 'haptic', 'is24Hour', 'pcs', 'selectPc', 'forgetPc', 'setBrightness', 'setHomeScreen', 'setOrientation',
-  'setPinned', 'setVolumeKeys', 'transport', 'sensors', 'version', 'canListen', 'listen', 'stopListening', 'cancelListening', 'trackpad', 'openApp'];
+  'setPinned', 'setVolumeKeys', 'transport', 'sensors', 'version', 'canListen', 'listen', 'stopListening', 'cancelListening', 'trackpad', 'openApp', 'keepAwake'];
 export const bridge = typeof Android === 'undefined' ? null : Object.fromEntries(BRIDGE.filter((m) => typeof Android[m] === 'function')
   .map((m) => [m, (...args) => Android[m](window.__phoneboxKey || '', ...args)]));
 // Live preview inside the agent's layout editor: the layout comes from the editor (unsaved), not from the agent.
@@ -2126,10 +2126,24 @@ export async function loadPush() {
 
 export function setOnline(on) {
   document.body.classList.toggle('offline', !on);
+  // The computer is gone: let the display time out so a panel nobody can read stops draining the battery.
+  // It comes back on its own when the computer returns (the app wakes the screen from the stream thread).
+  if (on) { screenOffTimer = 0; keepScreenOn(cfg.display?.keepAwake !== false); }
+  else if (!screenOffTimer && online !== false) {
+    screenOffTimer = setTimeout(() => {
+      screenOffTimer = 0;
+      if (!online && cfg.display?.keepAwake !== false) keepScreenOn(false);
+    }, 60_000);
+  }
   if (on && online !== true) { loadConfig(); loadQuotas(); loadWork(); loadPush(); loadApprovals(); loadCalendar(); }
   const changed = online !== on;
   online = on;
   if (changed) emit('state');
+}
+
+let screenOffTimer = 0;
+function keepScreenOn(on) {
+  try { if (typeof bridge?.keepAwake === 'function') bridge.keepAwake(on); } catch (_) {}
 }
 
 export function applyState(s, replayGen = null) {

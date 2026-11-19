@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Wakes the screen when the computer comes back (a short ACQUIRE_CAUSES_WAKEUP lock) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Dictation widget only: asked for the first time its microphone button is tapped -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
