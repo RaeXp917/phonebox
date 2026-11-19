@@ -109,18 +109,17 @@ jobs:
         id: cert
         if: startsWith(matrix.rid, 'osx-')
         run: |
+          openssl version
           bash tools/make-macos-signing-cert.sh --out "$RUNNER_TEMP/cert"
           password="$(cat "$RUNNER_TEMP/cert/phonebox-macos-signing.password")"
           echo "::add-mask::$password"
           {
-            echo "p12=$(base64 < "$RUNNER_TEMP/cert/phonebox-macos-signing.p12" | tr -d '
-')"
+            echo "p12=$(base64 < "$RUNNER_TEMP/cert/phonebox-macos-signing.p12" | tr -d '\n')"
             echo "password=$password"
           } >> "$GITHUB_OUTPUT"
           rm -rf "$RUNNER_TEMP/cert"
           # a second, different program for the requirement check below
-          printf 'int main(void) { return 0; }
-' | clang -x c - -o "$RUNNER_TEMP/other-build"
+          printf 'int main(void) { return 0; }\n' | clang -x c - -o "$RUNNER_TEMP/other-build"
       - name: Sign the macOS agent (throwaway certificate)
         if: startsWith(matrix.rid, 'osx-')
         uses: ./.github/actions/sign-macos-agent
