@@ -144,7 +144,7 @@ jobs:
           codesign --verify --strict --verbose=2 out/PhoneBoxAgent
           requirement="$(codesign -d -r- out/PhoneBoxAgent 2>&1 | sed -n 's/^designated => //p')"
           echo "Designated requirement: $requirement"
-          codesign --verify --verbose=2 -R="=$requirement" "$RUNNER_TEMP/other-build"
+          codesign --verify --verbose=2 -R="$requirement" "$RUNNER_TEMP/other-build"
       - name: Smoke test the single-file agent (Windows)
         if: matrix.rid == 'win-x64'
         shell: pwsh
