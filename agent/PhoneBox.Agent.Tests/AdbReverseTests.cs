@@ -261,7 +261,7 @@ public sealed class AdbReverseTests : IDisposable
                 display = new { homeScreen = false, keepAwake = false, followComputerLock = false, openOnConnect } },
             null, c => c.Count(x => x == "devices") >= 2);
         Assert.Contains("-s FAKE1 reverse tcp:8765 tcp:8765", calls);
-        Assert.Equal(openOnConnect, calls.Contains("-s FAKE1 shell am start -n net.oxog.phonebox.deskpanel/.MainActivity"));
+        Assert.Equal(openOnConnect, calls.Contains("-s FAKE1 shell am start -n net.oxog.phonebox.deskpanel/net.oxog.phonebox.deskpanel.MainActivity"));
         Assert.Equal(openOnConnect, calls.Contains("-s FAKE1 shell input keyevent KEYCODE_WAKEUP"));
     }
 
