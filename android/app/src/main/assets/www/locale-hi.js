@@ -887,7 +887,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "में ख़त्म होता है {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Messenger, Discord, Teams और Instagram की सूचनाएँ, सक्रिय रहने तक आपके फ़ोन से मिरर की जाती हैं।",
+      "Phone Notifications": "फ़ोन सूचनाएँ",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Messenger, Discord, Teams और Instagram की सूचनाएँ, सक्रिय रहने तक आपके फ़ोन से मिरर की जाती हैं।",
       "Only this category (its category in Settings; empty = all)": "केवल यह श्रेणी (सेटिंग्स में इसकी श्रेणी; खाली = सभी)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / कर्सर / OpenCode / Antigravity सत्र: कार्यरत, प्रतीक्षारत, निष्क्रिय.",
       "1": "1",

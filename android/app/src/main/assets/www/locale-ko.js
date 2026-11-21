@@ -887,7 +887,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "만료일 {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Messenger, Discord, Teams, Instagram 알림을 활성 상태인 동안 휴대폰에서 그대로 표시합니다.",
+      "Phone Notifications": "휴대폰 알림",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Messenger, Discord, Teams, Instagram 알림을 활성 상태인 동안 휴대폰에서 그대로 표시합니다.",
       "Only this category (its category in Settings; empty = all)": "이 분류만 (설정의 분류, 비우면 전체)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / Cursor / OpenCode / Antigravity 세션: 작업, 대기, 유휴.",
       "1": "1",

@@ -435,7 +435,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Abläuft in 1 Woche {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Benachrichtigungen von Messenger, Discord, Teams und Instagram, live von deinem eigenen Telefon gespiegelt, solange sie aktiv sind.",
+      "Phone Notifications": "Telefon-Benachrichtigungen",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Benachrichtigungen von Messenger, Discord, Teams und Instagram, live von deinem eigenen Telefon gespiegelt, solange sie aktiv sind.",
       "Only this category (its category in Settings; empty = all)": "Nur diese Kategorie (ihre Kategorie in den Einstellungen; leer = alle)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / Cursor / OpenCode / Antigravity-Sitzungen: arbeiten, warten, im Leerlauf.",
       "1": "1",
@@ -1825,7 +1826,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expire dans {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notifications de Messenger, Discord, Teams et Instagram, reprises en direct de votre téléphone tant qu'elles sont actives.",
+      "Phone Notifications": "Notifications du téléphone",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Notifications de Messenger, Discord, Teams et Instagram, reprises en direct de votre téléphone tant qu'elles sont actives.",
       "Only this category (its category in Settings; empty = all)": "Seulement cette catégorie (sa catégorie dans les réglages ; vide = toutes)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sessions Claude Code / Codex / Cursor / OpenCode / Antigravity: en cours, en attente, inactif.",
       "1": "1",
@@ -3215,7 +3217,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expira en 1 año {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notificaciones de Messenger, Discord, Teams e Instagram, copiadas en vivo de tu teléfono mientras están activas.",
+      "Phone Notifications": "Notificaciones del teléfono",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Notificaciones de Messenger, Discord, Teams e Instagram, copiadas en vivo de tu teléfono mientras están activas.",
       "Only this category (its category in Settings; empty = all)": "Solo esta categoría (su categoría en Ajustes; vacío = todas)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sesiones de Claude Code / Codex / Cursor / OpenCode / Antigravity: en funcionamiento, esperando, inactivo.",
       "1": "1",
@@ -4605,7 +4608,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Scade in 1 giorno {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notifiche di Messenger, Discord, Teams e Instagram, copiate dal tuo telefono finché restano attive.",
+      "Phone Notifications": "Notifiche del telefono",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Notifiche di Messenger, Discord, Teams e Instagram, copiate dal tuo telefono finché restano attive.",
       "Only this category (its category in Settings; empty = all)": "Solo questa categoria (la sua categoria nelle Impostazioni; vuoto = tutte)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sessioni Claude Code / Codex / Cursor / OpenCode / Antigravity: in esecuzione, in attesa, inattivi.",
       "1": "1",
@@ -5995,7 +5999,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expira em 1 ano {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notificações do Messenger, Discord, Teams e Instagram, espelhadas do seu telefone enquanto estão ativas.",
+      "Phone Notifications": "Notificações do telemóvel",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Notificações do Messenger, Discord, Teams e Instagram, espelhadas do seu telefone enquanto estão ativas.",
       "Only this category (its category in Settings; empty = all)": "Só esta categoria (a sua categoria nas Definições; vazio = todas)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sessões Claude Code / Codex / Cursor / OpenCode / Antigravity: em funcionamento, esperando, ocioso.",
       "1": "1",
@@ -6980,7 +6985,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expira em 1 ano {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notificações do Messenger, Discord, Teams e Instagram, espelhadas do seu telefone enquanto estão ativas.",
+      "Phone Notifications": "Notificações do telefone",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Notificações do Messenger, Discord, Teams e Instagram, espelhadas do seu telefone enquanto estão ativas.",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -7410,7 +7416,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Vervalt in 1 week {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Meldingen van Messenger, Discord, Teams en Instagram, live van je eigen telefoon zolang ze actief zijn.",
+      "Phone Notifications": "Telefoonmeldingen",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Meldingen van Messenger, Discord, Teams en Instagram, live van je eigen telefoon zolang ze actief zijn.",
       "Only this category (its category in Settings; empty = all)": "Alleen deze categorie (de categorie in Instellingen; leeg = alle)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / Cursor / OpenCode / Antigravity sessies: werken, wachten, inactief.",
       "1": "1",
@@ -8800,7 +8807,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Wygasa w ciągu {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Powiadomienia z Messengera, Discorda, Teams i Instagrama, przenoszone z twojego telefonu, dopóki są aktywne.",
+      "Phone Notifications": "Powiadomienia z telefonu",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Powiadomienia z Messengera, Discorda, Teams i Instagrama, przenoszone z twojego telefonu, dopóki są aktywne.",
       "Only this category (its category in Settings; empty = all)": "Tylko ta kategoria (jej kategoria w Ustawieniach; puste = wszystkie)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sesje Claude Code / Codex / Cursor / OpenCode / Antigravity: praca, oczekiwanie, bezczynność.",
       "1": "1",
@@ -10190,7 +10198,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Истечение в {time} ."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Уведомления Messenger, Discord, Teams и Instagram, зеркалируемые с вашего телефона, пока они активны.",
+      "Phone Notifications": "Уведомления телефона",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Уведомления Messenger, Discord, Teams и Instagram, зеркалируемые с вашего телефона, пока они активны.",
       "Only this category (its category in Settings; empty = all)": "Только эта категория (её категория в настройках; пусто = все)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Сеансы Claude Code / Codex / Cursor / OpenCode / Antigravity: работающие, ожидающие, неактивные.",
       "1": "1",
@@ -11175,7 +11184,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Λήγει σε 1 ημέρα {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Ειδοποιήσεις από Messenger, Discord, Teams και Instagram, κατοπτρισμένες από το τηλέφωνό σας όσο είναι ενεργές.",
+      "Phone Notifications": "Ειδοποιήσεις τηλεφώνου",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Ειδοποιήσεις από Messenger, Discord, Teams και Instagram, κατοπτρισμένες από το τηλέφωνό σας όσο είναι ενεργές.",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -11480,7 +11490,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Hết hạn trong {time} ."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Thông báo từ Messenger, Discord, Teams và Instagram, được sao từ điện thoại của bạn khi còn hiệu lực.",
+      "Phone Notifications": "Thông báo điện thoại",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Thông báo từ Messenger, Discord, Teams và Instagram, được sao từ điện thoại của bạn khi còn hiệu lực.",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -12190,7 +12201,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "届满日期 {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "来自 Messenger、Discord、Teams 和 Instagram 的通知，在有效期间从你的手机镜像显示。",
+      "Phone Notifications": "手机通知",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "来自 Messenger、Discord、Teams 和 Instagram 的通知，在有效期间从你的手机镜像显示。",
       "Only this category (its category in Settings; empty = all)": "仅此分类（设置中的分类；留空 = 全部）",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex 光标 OpenCode / Antigravity 会话:工作,等待,闲置。",
       "1": "1",

@@ -887,7 +887,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "過期 {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "來自 Messenger、Discord、Teams 和 Instagram 的通知，在有效期間從你的手機鏡像顯示。",
+      "Phone Notifications": "手機通知",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "來自 Messenger、Discord、Teams 和 Instagram 的通知，在有效期間從你的手機鏡像顯示。",
       "Only this category (its category in Settings; empty = all)": "僅此分類（設定中的分類；留空 = 全部）",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex 光標 OpenCode / Antigravity 會話 ： 工作 ， 等待 ， 空閒 。",
       "1": "1",

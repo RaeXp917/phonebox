@@ -887,7 +887,8 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expires in 10 dny {time}."
     },
     "catalog": {
-      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Oznámení z Messengeru, Discordu, Teams a Instagramu, zrcadlená z vašeho telefonu, dokud jsou aktivní.",
+      "Phone Notifications": "Oznámení telefonu",
+      "Displays the notifications mirrored from your paired Android phone: Messenger, Discord, Teams and Instagram, while they are active.": "Oznámení z Messengeru, Discordu, Teams a Instagramu, zrcadlená z vašeho telefonu, dokud jsou aktivní.",
       "Only this category (its category in Settings; empty = all)": "Jen tato kategorie (její kategorie v Nastavení; prázdné = všechny)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Relace Claude Code / Codex / Cursor / OpenCode / Antigravity: pracující, čekající, nečinný.",
       "1": "1",
