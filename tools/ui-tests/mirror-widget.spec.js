@@ -7,6 +7,12 @@ const ITEMS = [
   { id: '0|com.discord|2|null|1', app: 'Discord', package: 'com.discord', sender: 'Bob', text: 'ping', at: Date.now() - 30_000 },
 ];
 
+// The agent hands the panel the text exactly as the phone has it: no "String (...)" wrapper, and Greek or
+// emoji untouched. The wrapper is unwrapped by the agent, so what arrives here is already clean.
+const UNICODE = [
+  { id: '0|com.instagram.android|3|null|1', app: 'Instagram', package: 'com.instagram.android', sender: 'Καλημέρα σου', text: 'Ça va très bien 👨‍👩‍👧‍👦', at: Date.now() - 10_000 },
+];
+
 async function open(page, items) {
   await page.addInitScript((data) => {
     localStorage.setItem('pb-demo-config', JSON.stringify({
@@ -38,4 +44,15 @@ test('an empty feed says so instead of showing a blank card', async ({ page }) =
   await open(page, []);
   await expect(page.locator('.w-mirror .mirror-row')).toHaveCount(0);
   await expect(page.locator('.w-mirror .mirror-empty')).toBeVisible();
+});
+
+test('Greek, accents and a multi-codepoint emoji render exactly as sent', async ({ page }) => {
+  await open(page, UNICODE);
+  const row = page.locator('.w-mirror .mirror-row').first();
+  await expect(row.locator('.mirror-top b')).toHaveText('Καλημέρα σου');
+  await expect(row.locator('.mirror-text')).toHaveText('Ça va très bien 👨‍👩‍👧‍👦');
+  // no wrapper and no replacement characters survived
+  const text = await row.locator('.mirror-text').textContent();
+  expect(text.startsWith('String (')).toBe(false);
+  expect(text.includes('\uFFFD')).toBe(false);
 });

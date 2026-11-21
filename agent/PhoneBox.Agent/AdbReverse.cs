@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 
 namespace PhoneBox.Agent;
 
@@ -258,6 +259,10 @@ public sealed class AdbReverse(ConfigStore cfg, ILogger<AdbReverse> log, AgentEn
         {
             RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
             WorkingDirectory = AppPaths.NeutralCwd,
+            // adb hands back the device's own bytes, which are UTF-8. Without saying so, Process decodes them with
+            // the Windows console code page and Greek, accents and emoji arrive as mojibake.
+            StandardOutputEncoding = new UTF8Encoding(false),
+            StandardErrorEncoding = new UTF8Encoding(false),
         };
         var result = await ToolProcess.RunAsync(psi, TimeSpan.FromSeconds(8), ct);
         if (result.ExitCode != 0 && !anyExit) throw new IOException($"ADB exited with code {result.ExitCode}");

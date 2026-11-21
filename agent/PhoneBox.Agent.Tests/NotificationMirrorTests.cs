@@ -134,4 +134,58 @@ public class NotificationMirrorTests
         feed.Clear();
         Assert.Equal(v + 1, feed.Version);
     }
+
+    /// <summary>One record with the given title and/or text, in the shape `dumpsys notification` really prints.</summary>
+    private static string One(string? title = null, string? text = null, string? big = null)
+    {
+        var extras = "";
+        if (title is not null) extras += $"        android.title={title}\n";
+        if (text is not null) extras += $"        android.text={text}\n";
+        if (big is not null) extras += $"        android.bigText={big}\n";
+        return "NotificationRecord(0x01: pkg=com.facebook.orca user=u id=1 tag=null key=0|com.facebook.orca|1|null|1: Notification(flags=0x10 when=5)\n" +
+               "    extras={\n" + extras + "    }\n";
+    }
+
+    // dumpsys wraps a CharSequence extra as `String (the text)`. That wrapper is serialization, not content.
+    [Theory]
+    [InlineData("String (Alice)", "Alice")]
+    [InlineData("String (Sent you a voice message)", "Sent you a voice message")]
+    [InlineData("String (Hi (there))", "Hi (there)")]
+    [InlineData("String (String (x))", "String (x)")]
+    [InlineData("SpannableString (Alice)", "Alice")]
+    [InlineData("String theory", "String theory")]
+    [InlineData("Note (draft)", "Note (draft)")]
+    [InlineData("Alice", "Alice")]
+    public void TheDumpsysCharSequenceWrapperIsUnwrappedOnce(string raw, string expected)
+    {
+        Assert.Equal(expected, NotificationDump.Parse(One(title: raw)).Single().Sender);
+    }
+
+    // Greek, accents and emoji must survive the dump and the parser unchanged (the bytes are UTF-8 end to end).
+    [Theory]
+    [InlineData("String (Καλημέρα σου)")]
+    [InlineData("String (Ça va très bien)")]
+    [InlineData("String (🎉🎊 party)")]
+    [InlineData("String (👨‍👩‍👧‍👦 family)")]
+    [InlineData("String (🇬🇷 σημαία)")]
+    public void NonAsciiTextIsPreservedExactly(string raw)
+    {
+        var inner = raw["String (".Length..^1];
+        var item = NotificationDump.Parse(One(title: raw, text: raw)).Single();
+        Assert.Equal(inner, item.Sender);
+        Assert.Equal(inner, item.Text);
+    }
+
+    [Fact]
+    public void AnUpdateKeepsTheSameIdentityAndReplacesTheText()
+    {
+        var feed = new MirrorFeed();
+        feed.ReplaceAll(NotificationDump.Parse(One(title: "String (Alice)", text: "String (one)")));
+        Assert.True(feed.ReplaceAll(NotificationDump.Parse(One(title: "String (Alice)", text: "String (two)"))));
+        var item = Assert.Single(feed.Snapshot());
+        Assert.Equal("Alice", item.Sender);
+        Assert.Equal("two", item.Text);
+        Assert.True(feed.ReplaceAll(NotificationDump.Parse("")), "a withdrawal empties the feed");
+        Assert.Empty(feed.Snapshot());
+    }
 }

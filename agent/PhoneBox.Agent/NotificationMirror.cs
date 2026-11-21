@@ -75,8 +75,8 @@ public static partial class NotificationDump
             if (key is null) continue;
             if (FlagsOf(block) is { } flags && (flags & FlagGroupSummary) != 0) continue;
 
-            var sender = Field(block, "android.title=") ?? Field(block, "android.title.big=") ?? "";
-            var text = Clean(Field(block, "android.text=") ?? Field(block, "android.bigText=") ?? "", MaxText);
+            var sender = Unwrap(Field(block, "android.title=") ?? Field(block, "android.title.big=") ?? "");
+            var text = Clean(Unwrap(Field(block, "android.text=") ?? Field(block, "android.bigText=") ?? ""), MaxText);
             // nothing to show: a record without a title or a body (a media-style notification, or a truncated
             // dump) would only add an empty row
             if (sender.Trim().Length == 0 && text.Length == 0) continue;
@@ -127,6 +127,21 @@ public static partial class NotificationDump
         var v = Field(block, "flags=0x");
         return v is not null && int.TryParse(v.Split(' ')[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var flags) ? flags : null;
     }
+
+    /// <summary>
+    /// dumpsys prints a CharSequence extra as its class name followed by the value in brackets, e.g.
+    /// `String (Alice)`. Unwrap exactly that, once: real text keeps its own brackets (a message that is
+    /// literally "String (x)" is stored wrapped twice and unwrapped once), and text without the wrapper is
+    /// left untouched.
+    /// </summary>
+    private static string Unwrap(string value)
+    {
+        var m = CharSequenceDump().Match(value);
+        return m.Success ? m.Groups[1].Value : value;
+    }
+
+    [GeneratedRegex(@"^(?:String|SpannableString|SpannedString|CharSequence|StringBuilder) \((.*)\)$", RegexOptions.Singleline)]
+    private static partial Regex CharSequenceDump();
 
     /// <summary>One line, trimmed, and short enough for a panel row.</summary>
     private static string Clean(string value, int max)
