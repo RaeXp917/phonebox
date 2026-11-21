@@ -3,6 +3,186 @@
 ## Unreleased
 
 **Agent**
+- Phone app updates: a phone that cannot take a streamed install (`splice failed: EINVAL`, seen with Android 15 on a
+  3.10 kernel) is tried once more without streaming, and a phone whose app was updated another way no longer keeps
+  "Update available" on until the agent restarts (#353, [MU74NTLabs](https://github.com/MU74NTLabs)).
+- Discord: a speaking ring can no longer stay on after someone stops talking when you switch channels; speaking
+  events count only once both of the channel's subscriptions are in place (#354,
+  [M00n-of-saturn](https://github.com/M00n-of-saturn)).
+
+## 0.9.27 — 2026-11-21
+
+The Discord login works again, nine new languages (23 in all, Arabic right to left), Discord shows who is speaking,
+news feeds get categories and OPML import, and Antigravity chats can show in the AI sessions widget.
+
+**Languages**
+- Nine new languages, for 23 in all: Japanese, Korean, Indonesian, Thai, Ukrainian, Hindi, Czech, Arabic (right to
+  left) and Traditional Chinese. The Android pairing dialog and the Windows tray menu are now translated too, in every
+  language, and each language has its own README.
+- Right to left (Arabic): pages turn as in other languages, widgets stay where they were saved, and the overview map,
+  charts, playback timelines, meters and command output keep their left-to-right drawing (#346, #352,
+  [ahmedalnimr](https://github.com/ahmedalnimr)).
+
+**Widgets**
+- News feeds: each feed can have a **category**, and a News feeds widget can show only one category (**Only this
+  category**). **Import feeds (OPML / bulk)** in Settings › General › News feeds reads an OPML export (Feedly,
+  Inoreader, NetNewsWire and others; folders become categories) or pasted `Category | Name | URL` lines, skips feeds
+  that are already in the list, and keeps to the 30-feed limit (#337, [hariharen9](https://github.com/hariharen9)).
+- Discord: while you are in a voice channel or call, the member who is talking gets Discord's green ring. It uses the
+  voice scope PhoneBox already asks for; the widget asks the agent twice a second only while you are in a channel and
+  the widget is on screen (#348, #226, [M00n-of-saturn](https://github.com/M00n-of-saturn)).
+
+**Agent**
+- Antigravity chats in the AI sessions widget, from the IDE and the CLI: model, last tool, token counts and whether a
+  turn is running. Off by default (**Settings › General › Antigravity sessions**), and chat titles reach the phone only
+  with their own switch on. The agent reads the local transcripts for their step metadata only; prompts, replies and
+  tool arguments are never kept or sent (#341, [blx10](https://github.com/blx10)).
+- Discord: the login no longer fails with "Redirect URI cannot be used in the RPC OAuth2 Authorization flow". The
+  request to the Discord app asks for a code (`response_type: code`) instead of naming the redirect, which Discord
+  allows only over its WebSocket transport. `http://127.0.0.1` has to be the first redirect of the Discord application
+  (#338, #343, [NAWAF-Techpro](https://github.com/NAWAF-Techpro), [xynnpg](https://github.com/xynnpg)).
+
+**Setup**
+- Windows: setup adds PhoneBox to the Start Menu, so it can be started again after **Quit** without the autostart
+  shortcut; uninstalling removes it (#342, [hariharen9](https://github.com/hariharen9)).
+
+## 0.9.26 — 2026-11-21
+
+Two fixes: Turn off the monitor no longer makes the display go off and on again after a Modern Standby PC wakes,
+and phones with Android 5 or 6 stay connected over USB.
+
+**Agent**
+- USB on Android 5 and 6: the panel is opened once per connection and stays connected, instead of being reopened about
+  every ten seconds. The agent no longer asks these phones for their `adb reverse` rules (their adb answers with a
+  protocol fault and drops the phone, and the phone's own USB dialog covered the panel); it remembers the rule it set,
+  and sets it again when the phone is plugged in again (#334, [binhnguyenbinh](https://github.com/binhnguyenbinh)).
+- Turn off the monitor on a Modern Standby PC: after the wake the display no longer goes off and on again for about a
+  minute. The agent now sends the command once, to a hidden window of its own, instead of to every window (#336, #335,
+  [nosmile199x](https://github.com/nosmile199x)).
+
+## 0.9.25 — 2026-11-21
+
+Brazilian Portuguese for the panel and the settings page, OpenCode and Codex permission prompts on the phone, Copilot
+CLI status, an Immich album for the photo frame, Steam friends widgets, clipboard steps and `if:` conditions in
+shortcut macros, long-press and cycling keys, and the trackpad, On air and camera rules on macOS.
+
+**Languages**
+- Brazilian Portuguese (pt-BR): the panel, the settings page, the widget catalog and the Android pairing dialog. A phone
+  set to pt-BR picks it on its own, and other Portuguese phones keep Portugal's Portuguese (#313,
+  [ThalesAugusto0](https://github.com/ThalesAugusto0)).
+- About 170 texts the widgets wrote in English (empty states, button names, metric labels, toasts) now go through a
+  translation table, translated into pt-BR. Other languages show them in English as before until someone fills in
+  their part of the table (#328, [RedZinnm](https://github.com/RedZinnm)).
+
+**Widgets**
+- Shortcut macros: `clipboard:<text>` puts text on the computer's clipboard, `paste:<text>` pastes it through the
+  clipboard and then puts back the text that was copied, and `{clipboard}` in a text, clipboard or paste step (or a
+  *Type text* key) is replaced by what is on the clipboard. Pasted text is kept out of Windows' clipboard history and
+  cloud clipboard (#308, [Vasilispapg](https://github.com/Vasilispapg)).
+- Photo frame: an **Immich album** as the source, next to a folder on this computer (Settings › General › Photo
+  frame: the Immich address, a read-only API key, **Load albums**, pick one). The agent fetches Immich's preview-size
+  pictures and serves them to the phone like the folder's; the address and the key stay on the computer. Tested with
+  Immich 3.4.1 and 3.4.2 (#280, #279, [snachodog](https://github.com/snachodog)).
+- A **Wake the PC** button on the panel while the paired computer is unreachable: the phone sends the Wake-on-LAN
+  packet itself, only on the computer's own network (a network holding one of the addresses it was paired with), to the
+  MAC addresses the computer gave it when Wi-Fi pairing is on. Not offered on Android 5.0 (#303,
+  [Vasilispapg](https://github.com/Vasilispapg)).
+- Shortcut keys: a **Long press runs** option on each key. Tapping the key on the phone runs it as before; holding it for
+  half a second runs another key you choose (hold *Mute* to open the mixer). The phone only says the key was held, so
+  the long press cannot point at anything but a key from your own settings (#307,
+  [Vasilispapg](https://github.com/Vasilispapg)).
+- Shortcut keys: a new **Cycle through other keys** kind. Each tap runs the next key of its list and starts again after
+  the last, and the key shows the face of the key that ran. Where it stands is kept until the agent restarts (#310,
+  [Vasilispapg](https://github.com/Vasilispapg)).
+- Shortcut macros: `if:` … `else` … `endif` runs steps only when a condition holds: `running:<program>`, `muted`,
+  `on:<shortcut id>` (a toggle that is on) or `push:<key>` (a pushed value that is on), and `!` in front turns it
+  around. Each macro is checked before its first step, so a missing `endif` stops it before anything runs (#309,
+  [Vasilispapg](https://github.com/Vasilispapg)).
+- News feeds on Windows: an article whose link has square brackets after the host, such as Franceinfo's
+  `#xtor=RSS-3-[lestitres]`, opens in the browser instead of File Explorer's Documents folder (#312,
+  [Emsaco64](https://github.com/Emsaco64)).
+- **Steam friends** and **Steam friend activity** widgets: friends' avatars, online state, last seen time and current
+  game, and a short feed of friends coming online, starting a game or going offline. They need a Steam Web API key,
+  which stays on the computer: the agent asks Steam, about once a minute and only while one of the widgets is on an
+  enabled page, and the phone never contacts Steam. The activity feed lives in memory only. See
+  [docs/STEAM.md](docs/STEAM.md) (#244, [Sawaid-hub](https://github.com/Sawaid-hub)).
+- Pomodoro: an optional sound when a step ends, off by default and silent on the night screen, at a share of the
+  phone's media volume (#305, [abdulah-x](https://github.com/abdulah-x)).
+- Trackpad on macOS: the widget now moves the pointer, clicks and scrolls on a Mac, and three- and four-finger swipes,
+  spread and pinch do what the Mac's own Trackpad settings say (Mission Control, App Exposé, moving between
+  full-screen apps, Show Desktop, Apps). It needs Accessibility for PhoneBox. New **Haptics** options set how strongly the phone vibrates;
+  a tick while scrolling is off by default, and gestures vibrate only where the computer acts on them (#300,
+  [Vasilispapg](https://github.com/Vasilispapg)).
+- On air and the `mic-in-use` / `camera-in-use` rules work on macOS: the agent reads which apps use the microphone
+  (macOS 14.2 and later; before that, only whether one does) and whether a camera is running. The camera part is
+  untested on a Mac with a built-in camera; see the guide (#301, [Vasilispapg](https://github.com/Vasilispapg)).
+
+**Agent**
+- OpenCode on the phone, through the local API of its background service: permission prompts with **Allow**,
+  **Allow always** (only when OpenCode says which pattern it saves, and after a short countdown) and **Deny**, and
+  the agent's questions with their choices or a typed answer. Its sessions can show in the Sessions widget. Each part
+  has its own switch in **Settings › General**, and all of them are off by default: phone answers, sessions, session
+  titles, and OpenCode inside WSL. WSL is looked at only for distributions that are already running, at most once a
+  minute, so a stopped distribution is never started. The service's password stays on the computer (#319,
+  [Haruki1707](https://github.com/Haruki1707)).
+- Copilot CLI status on the panel: a guide and a small bridge script ([docs/COPILOT-CLI.md](docs/COPILOT-CLI.md))
+  send whether a GitHub Copilot CLI session is working, has finished its turn or needs attention through the webhook
+  API, also from WSL2. Only the state is sent, never prompts, paths or output (#331, #317,
+  [quasimagia](https://github.com/quasimagia)).
+- Codex permission prompts on the phone: install the Codex hook in **Settings › General** (next to Claude Code's), trust
+  it once in Codex, and Codex's approval requests arrive on the phone with **Allow** and **Deny**, like Claude Code's.
+  The hooks never go through a proxy (#321, #254, [akpinarserdar](https://github.com/akpinarserdar)).
+- Live Codex quotas without a running Codex session: an opt-in setting (**Settings › General › AI quotas & CodexBar**,
+  off by default) reads them through the Codex CLI's own app-server every few minutes while a page shows Codex
+  quotas, backing off after failures (#290, #298, [wahackr](https://github.com/wahackr)).
+- Shortcuts on Windows: a program a shortcut starts (Spotify, say) opens in front instead of behind the window in use,
+  as the App dock's apps already do (#322, [adamjorgkaizen-oss](https://github.com/adamjorgkaizen-oss)).
+- Discord: the login no longer fails with `invalid_request: Missing "redirect_uri"`. The authorization request now
+  names the same `http://127.0.0.1` redirect as the token exchange (#316, [Sune2you](https://github.com/Sune2you)).
+- Wake-on-LAN: a **Wake a computer** shortcut (Settings › Shortcuts) turns on another machine on your network from its
+  MAC address, also while the phone is away on Tailscale. It sends a magic packet on the local network only; see the
+  guide for the BIOS and adapter settings the machine needs (#302, [Vasilispapg](https://github.com/Vasilispapg)).
+- Now Playing on macOS and Linux is read every second only while a panel or a `media-playing` rule asks for it, and
+  every 10 seconds otherwise, so an idle computer no longer starts `nowplaying-cli` or `playerctl` every second (#299,
+  [EgglezosHub](https://github.com/EgglezosHub)).
+
+## 0.9.24 — 2026-11-20
+
+A security fix for phones connected over USB: the USB connection now answers only the PhoneBox app, so **update the
+agent and the phone app together**. Also: audio mixers show one control per app on Windows, Microphone and Output
+selection fit side by side, device batteries refresh faster, and a phone that is plugged in can be left as it is.
+
+**Security**
+- The USB connection answers only the PhoneBox app. `adb reverse` now ends on a loopback port of its own instead of the
+  agent's local port, over TLS that the app pins to the agent's certificate, and every request must carry a key the
+  app makes. The agent reads that key and hands over the certificate's fingerprint over adb, through a place only the
+  adb shell can reach, after checking that it belongs to the PhoneBox app. Over USB the phone reaches the same paths as
+  over Wi-Fi, plus its pairing data and the feed proxy; the settings, shortcut tests and pairing controls stay on the
+  computer. **Update the agent and the phone app together**: an older app can't use USB with this agent, and the
+  settings page offers its update. If an app you don't trust was ever on the panel phone, pair Wi-Fi again and make a
+  new webhook key, and renew the Home Assistant, Discord and other tokens in the settings
+  ([GHSA-j6qc-pm3p-fhg7](https://github.com/ersinkoc/phonebox/security/advisories/GHSA-j6qc-pm3p-fhg7)).
+
+**Widgets**
+- Audio mixers on Windows: one control per app instead of one per Windows audio session. An app that plays on two
+  outputs, or that you moved to another output, no longer shows up twice. Apps get the name Windows' own mixer shows
+  (MSI Center, not `DCv2`), and the phone lists only apps that are playing, plus System sounds. Volume and mute reach
+  every session of the app; ducking, the sleep timer and audio profiles still see every session (#292,
+  [RawreeUX](https://github.com/RawreeUX)).
+- Microphone and Output selection: a **Layout** option (horizontal, grid or the vertical list as before), so several
+  devices fit side by side on a phone, and **Device labels** to show a short name or an emoji for a device
+  (`Speakers (USB Audio CODEC) = 🔊`, one per line, matched by its exact name). Switching still uses the device itself,
+  and the full name stays in the button's tooltip (#294, [RawreeUX](https://github.com/RawreeUX)).
+- Audio mixers: mute is a compact speaker icon under the volume instead of a wide Mute / Unmute button, so many apps
+  fit without overlapping (#293, [RawreeUX](https://github.com/RawreeUX)).
+- Device batteries on Windows: a paired Bluetooth device that has disconnected (a controller or headset turned off) is
+  no longer shown with its last battery reading (#295, [RawreeUX](https://github.com/RawreeUX)).
+- Device batteries: the Razer Barracuda Pro, read through its 2.4 GHz receiver, also while Razer Synapse runs (#296,
+  [RawreeUX](https://github.com/RawreeUX)).
+- Device batteries refresh every 20 seconds while the widget is shown, instead of once a minute; macOS stays at once a
+  minute, because reading headphones there takes seconds (#297, [RawreeUX](https://github.com/RawreeUX)).
+
+**Agent**
 - A new **Settings › Display › Open PhoneBox when the phone is plugged in** option (on by default, so nothing
   changes until you turn it off). Off, a phone that connects over USB, or reconnects after adb restarts, is left as it
   is instead of being woken with the panel brought to the front, for a phone that also runs app tests over adb (#291,

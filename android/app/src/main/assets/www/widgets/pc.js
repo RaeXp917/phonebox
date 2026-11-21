@@ -1,4 +1,4 @@
-import { $, API, D, PANEL_HEADERS, LOCALE, Q_STYLE, api, bridge, cfg, color, cssVar, rulesPaused, toggleRulesPause, fillIcon, fmtDur, fmtHM, fmtMem, gotoPageRef, gpuMem, gpusOf, h, en, haptic, icon, openSheet, paceInfo, pad, pairedPcs, quotaProviders, r1, shortGpu, store, switchPc, t, tick, toast, transport, emo, labelled, rich } from '../main.js';
+import { $, API, D, curPage, pages, PANEL_HEADERS, LOCALE, Q_STYLE, api, bridge, cfg, color, cssVar, rulesPaused, toggleRulesPause, fillIcon, fmtDur, fmtHM, fmtMem, gotoPageRef, gpuMem, gpusOf, h, en, haptic, icon, openSheet, paceInfo, pad, pairedPcs, quotaProviders, r1, shortDur, shortGpu, store, switchPc, t, tick, toast, transport, emo, labelled, rich, tp, tpv, quotaText } from '../main.js';
 import { W } from '../registry.js';
 import { canKillAnywhere, dialEl, every } from './helpers.js';
 
@@ -58,7 +58,7 @@ W.batteries = {
       if (key === lastKey) return;
       lastKey = key;
       if (!data && !devices.length) { list.replaceChildren(h('div', 'empty', t('w.loading'))); return; }
-      if (!devices.length) { list.replaceChildren(h('div', 'empty', 'No wireless devices report a battery level')); return; }
+      if (!devices.length) { list.replaceChildren(h('div', 'empty', tp('No wireless devices report a battery level'))); return; }
       list.replaceChildren(...devices.map((d) => {
         const col = d.level <= low ? '#ef4444' : d.level <= low * 2 ? '#f59e0b' : '#22c55e';
         const row = h('div', 'bt-row' + (d.level <= low ? ' low' : ''),
@@ -71,7 +71,7 @@ W.batteries = {
         return row;
       }));
     };
-    const tick = every(30_000, async () => { await load(); render(); });
+    const tick = every(20_000, async () => { await load(); render(); });
     return { update: () => { tick(); render(); } };
   },
 };
@@ -88,7 +88,7 @@ W.obs = {
       busy = action + (scene || ''); render(true);
       try {
         const r = await fetch(`${API}/obs/${action}` + (scene ? '?scene=' + encodeURIComponent(scene) : ''), { method: 'POST', cache: 'no-store', headers: PANEL_HEADERS });
-        if (!r.ok) toast((await r.json().catch(() => ({}))).error || 'OBS did not do it', 'err');
+        if (!r.ok) toast((await r.json().catch(() => ({}))).error || tp('OBS did not do it'), 'err');
       } catch (_) { toast(t('panel.pcNoAnswer'), 'err'); }
       setTimeout(async () => { await load(); busy = null; render(true); }, 600);
     };
@@ -99,7 +99,7 @@ W.obs = {
       if (!force && key === lastKey) return;
       lastKey = key;
       if (!data) { box.replaceChildren(h('div', 'empty', t('w.loading'))); return; }
-      if (!data.enabled) { box.replaceChildren(h('div', 'w-title', en('OBS')), h('div', 'empty', 'Turn on OBS in Settings › General')); return; }
+      if (!data.enabled) { box.replaceChildren(h('div', 'w-title', en('OBS')), h('div', 'empty', tp('Turn on OBS in Settings › General'))); return; }
       if (!s.connected) { box.replaceChildren(h('div', 'w-title', en('OBS')), h('div', 'empty', s.error || t('panel.connecting'))); return; }
       const ctl = data.control;
       const pill = (on, label, cls, time, action) => {
@@ -107,10 +107,10 @@ W.obs = {
         if (ctl) el.addEventListener('click', () => act(action));
         return el;
       };
-      const recLabel = s.recordPaused ? 'PAUSED' : 'REC';
+      const recLabel = s.recordPaused ? tp('PAUSED') : 'REC';
       const kids = [
         h('div', 'obs-top', pill(s.streaming, 'LIVE', 'live', s.streamMs, 'stream'), pill(s.recording, recLabel, 'rec', s.recordPaused ? s.recordMs - since : s.recordMs, 'record')),
-        h('div', 'obs-scene', h('span', null, 'Scene'), h('b', null, s.scene || '—'),
+        h('div', 'obs-scene', h('span', null, tp('Scene')), h('b', null, s.scene || '—'),
           s.micMuted != null ? h('span', 'obs-mic' + (s.micMuted ? ' muted' : ''), emo(s.micMuted ? '🔇' : '🎙️')) : null),
       ];
       if (o.scenes !== false && s.scenes.length) {
@@ -132,8 +132,8 @@ W.obs = {
 // Discord through the desktop app on the PC: the voice channel / call you are in, who is there, mute / deafen / leave,
 // voice channels to join and recent notifications. Buttons only work when the widget allows control.
 W.discord = {
-  needs: ['tick'],
-  create(box, { o }) {
+  needs: ['tick', 'fast'],
+  create(box, { o, page }) {
     let data = null, lastKey = '', busy = null;
     const open = new Set(); // servers whose channels are unfolded
     // a round logo: the image once it has loaded, the first letter until then (and when there is no image)
@@ -155,10 +155,17 @@ W.discord = {
       await new Promise((done) => setTimeout(done, 600));
       await load(); busy = null; render(true);
     };
+    // Who is speaking changes several times a second: that only moves the ring on the chips already drawn, since a full
+    // redraw recreates every avatar and server icon and they flash while they load again.
+    const rings = new Map();
+    const ring = () => { for (const m of data?.snapshot?.members || []) rings.get(m.id)?.classList.toggle('speaking', !!m.speaking); };
     const render = (force = false) => {
-      const key = JSON.stringify([data, busy, [...open], box.clientHeight]);
-      if (!force && key === lastKey) return;
+      const s0 = data?.snapshot;
+      const quiet = s0?.members ? { ...data, snapshot: { ...s0, members: s0.members.map(({ speaking, ...m }) => m) } } : data;
+      const key = JSON.stringify([quiet, busy, [...open], box.clientHeight]);
+      if (!force && key === lastKey) { ring(); return; }
       lastKey = key;
+      rings.clear();
       if (!data) { box.replaceChildren(h('div', 'empty', t('w.loading'))); return; }
       if (!data.enabled) { box.replaceChildren(h('div', 'w-title', en('Discord')), h('div', 'empty', t('w.discord.turnOn'))); return; }
       const s = data.snapshot;
@@ -176,7 +183,11 @@ W.discord = {
         btn('mute', emo(s.muted ? '🔇' : '🎙️'), s.muted, 'mute'), btn('deaf', emo(s.deafened ? '🔕' : '🎧'), s.deafened, 'deafen'),
         s.channelId ? btn('leave', emo('📞'), false, 'leave') : null)];
       if (s.channelId && s.members.length) {
-        kids.push(h('div', 'dc-members', ...s.members.map((m) => h('span', 'dc-member' + (m.deafened ? ' deaf' : m.muted ? ' muted' : ''), ico(m.avatar && img('user', m.id, m.avatar), m.name), rich((m.deafened ? '🔕 ' : m.muted ? '🔇 ' : '') + m.name)))));
+        kids.push(h('div', 'dc-members', ...s.members.map((m) => {
+          const chip = h('span', 'dc-member' + (m.deafened ? ' deaf' : m.muted ? ' muted' : '') + (m.speaking ? ' speaking' : ''), ico(m.avatar && img('user', m.id, m.avatar), m.name), rich((m.deafened ? '🔕 ' : m.muted ? '🔇 ' : '') + m.name));
+          rings.set(m.id, chip);
+          return chip;
+        })));
       }
       if (o.channels !== false && s.channels.length) {
         // one block per server; tap it to unfold its voice channels (the server you are in starts unfolded)
@@ -215,8 +226,285 @@ W.discord = {
       }
       box.replaceChildren(...kids);
     };
-    const tick = every(2000, async () => { await load(); render(); });
+    // In a channel the widget asks every 500 ms so the speaking ring follows the voice (a local request, answered
+    // from the agent's memory); otherwise every 2 s as before. Off screen (a neighbouring page, a Smart Stack card
+    // that isn't showing, the app in the background) it doesn't ask at all, and catches up within 250 ms of showing.
+    const visible = () => box.isConnected && !document.hidden && pages[curPage] === page && !box.closest('.stack-item:not(.active)');
+    let next = 0, asking = false, shown = false;
+    const poll = () => {
+      const now = visible();
+      if (now && !shown) next = 0; // shown again: catch up at once instead of waiting out the old pace
+      shown = now;
+      if (asking || !now || Date.now() < next) return; // a slow answer is never overtaken by the next request
+      asking = true;
+      // the pace follows the answer just received, so joining or leaving a channel changes it at once
+      load().then(() => { asking = false; next = Date.now() + (data?.snapshot?.channelId ? 500 : 2000); render(); });
+    };
+    // 'fast' (every 250 ms) drives the asking; 'tick' (every second) also redraws when the widget's size changes
+    return { update: (kind) => { poll(); if (kind !== 'fast') render(); } };
+  },
+};
+
+// Steam friends presence via the local agent's Web API connection. The API key never reaches the phone.
+const steamAvatarUrls = new Map();
+const steamAvatarPending = new Map();
+const steamAvatarFailedUntil = new Map();
+const steamAvatarTimers = new Map();
+const STEAM_AVATAR_CACHE_LIMIT = 200;
+const STEAM_AVATAR_REFRESH_MS = 24 * 60 * 60 * 1000;
+const STEAM_AVATAR_RETRY_MS = 60_000;
+let steamAvatarPortraitObserver = null;
+
+function rememberSteamAvatar(id, url) {
+  const previous = steamAvatarUrls.get(id);
+  steamAvatarUrls.delete(id);
+  steamAvatarUrls.set(id, { url, refreshedAt: Date.now() });
+  while (steamAvatarUrls.size > STEAM_AVATAR_CACHE_LIMIT) {
+    const [oldId, oldAvatar] = steamAvatarUrls.entries().next().value;
+    steamAvatarUrls.delete(oldId);
+    URL.revokeObjectURL(oldAvatar.url);
+  }
+  return previous;
+}
+
+function steamAvatarRoots(id) {
+  return [...document.querySelectorAll('.st-portrait[data-steam-id]')]
+    .filter((root) => root.dataset.steamId === id && root.isConnected);
+}
+
+function pruneSteamAvatarTimers() {
+  const mounted = new Set([...document.querySelectorAll('.st-portrait[data-steam-id]')]
+    .filter((root) => root.isConnected).map((root) => root.dataset.steamId));
+  for (const [id, timer] of steamAvatarTimers) {
+    if (mounted.has(id)) continue;
+    clearTimeout(timer.handle);
+    steamAvatarTimers.delete(id);
+    steamAvatarFailedUntil.delete(id);
+  }
+  if (!steamAvatarTimers.size && steamAvatarPortraitObserver) {
+    steamAvatarPortraitObserver.disconnect();
+    steamAvatarPortraitObserver = null;
+  }
+}
+
+function watchSteamAvatarPortraits() {
+  if (steamAvatarPortraitObserver || !document.documentElement) return;
+  steamAvatarPortraitObserver = new MutationObserver(pruneSteamAvatarTimers);
+  steamAvatarPortraitObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+function scheduleSteamAvatarTimer(id, dueAt) {
+  const existing = steamAvatarTimers.get(id);
+  if (existing?.dueAt === dueAt) return;
+  if (existing) clearTimeout(existing.handle);
+  const timer = { dueAt, handle: setTimeout(() => {
+    steamAvatarTimers.delete(id);
+    if (steamAvatarRoots(id).length) loadSteamAvatar(id);
+    else steamAvatarFailedUntil.delete(id);
+  }, Math.max(0, dueAt - Date.now())) };
+  steamAvatarTimers.set(id, timer);
+  watchSteamAvatarPortraits();
+  queueMicrotask(pruneSteamAvatarTimers);
+}
+
+function showSteamAvatar(root, url) {
+  const image = root._steamAvatarImage;
+  const fallback = root._steamAvatarFallback;
+  const id = root.dataset.steamId;
+  image.onerror = () => {
+    if (steamAvatarUrls.get(id)?.url === url) {
+      steamAvatarUrls.delete(id);
+      URL.revokeObjectURL(url);
+    }
+    if (image.isConnected) image.replaceWith(fallback);
+    const dueAt = Date.now() + STEAM_AVATAR_RETRY_MS;
+    steamAvatarFailedUntil.set(id, dueAt);
+    scheduleSteamAvatarTimer(id, dueAt);
+  };
+  image.src = url;
+  if (fallback.parentNode === root) fallback.replaceWith(image);
+  if (typeof image.decode === 'function') return image.decode().catch(() => {});
+  if (image.complete) return Promise.resolve();
+  return new Promise((resolve) => {
+    image.addEventListener('load', resolve, { once: true });
+    image.addEventListener('error', resolve, { once: true });
+  });
+}
+
+function updateMountedSteamAvatars(id, url, previous) {
+  const updates = steamAvatarRoots(id).map((root) => showSteamAvatar(root, url));
+  Promise.all(updates).then(() => {
+    if (previous && previous.url !== url) URL.revokeObjectURL(previous.url);
+  });
+}
+
+function scheduleSteamAvatarRefresh(id, avatar) {
+  const failedUntil = steamAvatarFailedUntil.get(id) || 0;
+  const dueAt = failedUntil > Date.now() ? failedUntil : avatar.refreshedAt + STEAM_AVATAR_REFRESH_MS;
+  scheduleSteamAvatarTimer(id, dueAt);
+}
+
+function loadSteamAvatar(id) {
+  if (steamAvatarPending.has(id)) return steamAvatarPending.get(id);
+  const failedUntil = steamAvatarFailedUntil.get(id) || 0;
+  if (failedUntil > Date.now()) {
+    scheduleSteamAvatarTimer(id, failedUntil);
+    return Promise.resolve(null);
+  }
+  const pending = fetch(`${API}/steam/avatar?id=${encodeURIComponent(id)}`, { cache: 'no-store', headers: PANEL_HEADERS })
+    .then((response) => { if (!response.ok) throw new Error('avatar unavailable'); return response.blob(); })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const previous = rememberSteamAvatar(id, url);
+      steamAvatarFailedUntil.delete(id);
+      const timer = steamAvatarTimers.get(id);
+      if (timer) { clearTimeout(timer.handle); steamAvatarTimers.delete(id); }
+      updateMountedSteamAvatars(id, url, previous);
+      scheduleSteamAvatarRefresh(id, steamAvatarUrls.get(id));
+      return url;
+    }).catch(() => {
+      const dueAt = Date.now() + STEAM_AVATAR_RETRY_MS;
+      steamAvatarFailedUntil.set(id, dueAt);
+      scheduleSteamAvatarTimer(id, dueAt);
+      return null;
+    }).finally(() => steamAvatarPending.delete(id));
+  steamAvatarPending.set(id, pending);
+  return pending;
+}
+
+function steamPortrait(friend) {
+  const name = friend.name || t('w.steam.user');
+  const fallback = h('span', 'st-avatar-fallback', [...name.trim()][0]?.toLocaleUpperCase() || '🎮');
+  const portrait = h('span', 'st-portrait', fallback);
+  if (friend.hasAvatar) {
+    portrait.dataset.steamId = friend.id;
+    const image = h('img', 'st-avatar');
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.referrerPolicy = 'no-referrer';
+    portrait._steamAvatarImage = image;
+    portrait._steamAvatarFallback = fallback;
+    const cached = steamAvatarUrls.get(friend.id);
+    if (cached) {
+      steamAvatarUrls.delete(friend.id);
+      steamAvatarUrls.set(friend.id, cached);
+      showSteamAvatar(portrait, cached.url);
+      scheduleSteamAvatarRefresh(friend.id, cached);
+    } else {
+      loadSteamAvatar(friend.id);
+    }
+  }
+  if (Number.isInteger(friend.state)) portrait.append(h('i', `st-dot state-${friend.state}`));
+  return portrait;
+}
+
+function refreshSteamTimes(box) {
+  box.querySelectorAll('.st-sub[data-last-logoff]').forEach((label) => {
+    const lastLogoff = Number(label.dataset.lastLogoff);
+    if (lastLogoff > 0) label.textContent = t('w.steam.lastSeen', { time: shortDur(Date.now() - lastLogoff * 1000) });
+  });
+  box.querySelectorAll('.st-time[data-at]').forEach((label) => {
+    const at = Number(label.dataset.at);
+    const age = Math.max(0, Date.now() - at);
+    label.textContent = age < 60_000 ? t('time.justNow') : t('time.ago', { dur: shortDur(age) });
+  });
+}
+
+function steamFriendRow(friend, sub) {
+  const classes = ['st-row'];
+  if (Number.isInteger(friend.state)) classes.push(`state-${friend.state}`);
+  if (friend.state > 0) classes.push('online');
+  const detail = h('small', 'st-sub', sub);
+  if (friend.state <= 0 && !friend.game && friend.lastLogoff) detail.dataset.lastLogoff = String(friend.lastLogoff);
+  return h('div', classes.join(' '),
+    steamPortrait(friend), h('span', 'st-info', h('b', 'st-name', friend.name || t('w.steam.user')), detail));
+}
+
+W.steam = {
+  needs: ['tick'],
+  create(box, { o }) {
+    let data = null, lastKey = '', failed = false, settled = false;
+    const load = async () => {
+      try { data = await api('/steam', 'GET', 5000); failed = false; settled = true; return true; }
+      catch (_) { failed = true; settled = true; return false; }
+    };
+    const stateLabel = (state) => ({
+      1: t('w.steam.state.online'), 2: t('w.steam.state.busy'), 3: t('w.steam.state.away'),
+      4: t('w.steam.state.snooze'), 5: t('w.steam.state.trade'), 6: t('w.steam.state.play'),
+    }[state] || t('w.offline'));
+    const render = () => {
+      const key = JSON.stringify([data, o.offline, box.clientHeight, failed, settled]);
+      if (key === lastKey) { refreshSteamTimes(box); return; }
+      lastKey = key;
+      if (!data) { box.replaceChildren(h('div', 'empty', t(failed ? 'w.unavailable' : 'w.loading'))); return; }
+      if (!data.enabled) { box.replaceChildren(h('div', 'w-title', t('w.steam.title')), h('div', 'empty', t('w.steam.turnOn'))); return; }
+      const s = data.snapshot || {};
+      if (!s.connected && !s.friends?.length) {
+        box.replaceChildren(h('div', 'w-title', t('w.steam.title')), h('div', 'empty', s.error || t('panel.connecting')));
+        return;
+      }
+      const all = s.friends || [];
+      const friends = (o.offline ? all : all.filter((f) => f.state > 0))
+        .sort((a, b) => Number(!!b.game) - Number(!!a.game) || a.name.localeCompare(b.name));
+      const body = [];
+      if (failed || s.error) body.push(h('div', 'st-error', t('w.steam.stale')));
+      if (s.error) body.push(h('div', 'st-error', s.error));
+      if (!s.totalFriends) body.push(h('div', 'empty', t('w.steam.noFriends')));
+      else if (!all.length) body.push(h('div', 'empty', t('w.steam.noVisibleFriends')));
+      else if (!friends.length) body.push(h('div', 'empty', t('w.steam.noOnline')));
+      else body.push(h('div', 'st-list', ...friends.map((f) => steamFriendRow(f,
+        f.game ? t('w.steam.playing', { game: f.game })
+          : f.state > 0 ? stateLabel(f.state)
+            : f.lastLogoff ? t('w.steam.lastSeen', { time: shortDur(Date.now() - f.lastLogoff * 1000) })
+              : Number.isInteger(f.state) ? stateLabel(f.state) : '?'))));
+      box.replaceChildren(h('div', 'st-head', h('div', 'w-title', t('w.steam.title')),
+        h('span', 'st-count', t('w.steam.onlineCount', { online: s.onlineCount || 0, total: s.totalFriends || 0 }))), ...body);
+    };
+    const tick = every(15000, async () => { await load(); render(); });
     return { update: () => { tick(); render(); } };
+  },
+};
+
+// A short local history of public Steam presence changes (not private chat messages).
+W['steam-activity'] = {
+  needs: ['tick'],
+  create(box) {
+    let data = null, lastKey = '', failed = false, settled = false;
+    const load = async () => {
+      try { data = await api('/steam', 'GET', 5000); failed = false; settled = true; return true; }
+      catch (_) { failed = true; settled = true; return false; }
+    };
+    const render = () => {
+      const key = JSON.stringify([data, failed, settled]);
+      if (key === lastKey) { refreshSteamTimes(box); return; }
+      lastKey = key;
+      if (!data) { box.replaceChildren(h('div', 'empty', t(failed ? 'w.unavailable' : 'w.loading'))); return; }
+      if (!data.enabled) { box.replaceChildren(h('div', 'w-title', t('w.steam.activity.title')), h('div', 'empty', t('w.steam.turnOn'))); return; }
+      const s = data.snapshot || {};
+      if (!s.connected && !s.activity?.length) {
+        box.replaceChildren(h('div', 'w-title', t('w.steam.activity.title')), h('div', 'empty', s.error || t('panel.connecting')));
+        return;
+      }
+      const events = s.activity || [];
+      const rows = events.map((e) => {
+        const label = e.kind === 'playing' ? t('w.steam.activity.playing', { game: e.game || '' })
+          : e.kind === 'offline' ? t('w.steam.activity.offline') : t('w.steam.activity.online');
+        const age = e.at ? Date.now() - e.at : 0;
+        const time = h('small', 'st-time', age < 60_000 ? t('time.justNow') : t('time.ago', { dur: shortDur(age) }));
+        if (e.at) time.dataset.at = String(e.at);
+        return h('div', 'st-event', steamPortrait(e),
+          h('span', 'st-info', h('b', 'st-name', e.name || t('w.steam.user')), h('small', 'st-sub', label)),
+          time);
+      });
+      box.replaceChildren(h('div', 'st-head', h('div', 'w-title', t('w.steam.activity.title')),
+        h('span', 'st-count', events.length)),
+      failed || s.error ? h('div', 'st-error', t('w.steam.stale')) : null,
+      s.error ? h('div', 'st-error', s.error) : null,
+      events.length ? h('div', 'st-list st-activity-list', ...rows) : h('div', 'empty', t('w.steam.activity.empty')));
+    };
+    const poll = every(30000, async () => { await load(); render(); });
+    return { update: () => { poll(); render(); } };
   },
 };
 
@@ -242,10 +530,10 @@ export function haState(e) {
   if (s === 'unavailable' || s === 'unknown') return s === 'unknown' ? '—' : t('w.unavailable');
   if (dom === 'binary_sensor') {
     const on = s === 'on';
-    if (['door', 'window', 'garage_door', 'opening'].includes(dc)) return on ? 'Open' : 'Closed';
-    if (['motion', 'occupancy', 'presence'].includes(dc)) return on ? 'Detected' : 'Clear';
-    if (dc === 'moisture') return on ? 'Wet' : 'Dry';
-    return on ? 'On' : 'Off';
+    if (['door', 'window', 'garage_door', 'opening'].includes(dc)) return on ? tp('Open') : tp('Closed');
+    if (['motion', 'occupancy', 'presence'].includes(dc)) return on ? tp('Detected') : tp('No detection');
+    if (dc === 'moisture') return on ? tp('Wet') : tp('Dry');
+    return on ? tp('On') : tp('Off');
   }
   if (dom === 'scene' || dom === 'script' || dom === 'button' || dom === 'input_button') return 'Run';
   if (/^-?\d+(\.\d+)?$/.test(s)) { const n = +s; return (Math.abs(n) >= 100 ? Math.round(n) : Math.round(n * 10) / 10) + (e.unit ? ' ' + e.unit : ''); }
@@ -293,7 +581,7 @@ W.ha = {
       busy = e.id; render(true);
       try {
         const r = await fetch(`${API}/ha/toggle/${encodeURIComponent(e.id)}`, { method: 'POST', cache: 'no-store', headers: PANEL_HEADERS });
-        if (!r.ok) toast((await r.json().catch(() => ({}))).error || 'Could not switch it', 'err');
+        if (!r.ok) toast((await r.json().catch(() => ({}))).error || tp('Could not switch it'), 'err');
       } catch (_) { toast(t('panel.pcNoAnswer'), 'err'); }
       setTimeout(async () => { await load(); busy = null; render(true); }, 700);
     };
@@ -354,7 +642,7 @@ W.docker = {
       const running = items.filter((c) => c.state === 'running').length;
       head.querySelector('.dk-count').textContent = snap?.available && (!snap.error || matched.length) ? ` ${running}/${matched.length}` : '';
       if (!data || (!snap?.updated && !snap?.error)) { list.replaceChildren(h('div', 'empty', t('w.loading'))); return; }
-      if (!snap.available || (snap.error && !items.length)) { list.replaceChildren(h('div', 'empty', snap.error || 'Docker is not running')); return; }
+      if (!snap.available || (snap.error && !items.length)) { list.replaceChildren(h('div', 'empty', snap.error || tp('Docker is not running'))); return; }
       if (!items.length) {
         const msg = matched.length
           ? `No running containers (${matched.length} stopped)`
@@ -369,7 +657,7 @@ W.docker = {
           h('span', 'dk-name', c.name, h('small', null, ' ' + (c.project ? c.project + ' · ' : '') + c.image.split('@')[0])),
           h('span', 'dk-stat', busy === c.id ? '…' : c.state === 'running' ? (c.cpu != null ? `${c.cpu.toFixed(1)}%` + (c.mem ? ` · ${c.mem}` : '') : c.status) : c.status.replace(/ ago$/, '')));
         row.addEventListener('click', () => {
-          if (!data.control) { toast('Turn on "Allow start / stop" in the widget settings on the PC'); return; }
+          if (!data.control) { toast(tp('Turn on "Allow start / stop" in the widget settings on the PC')); return; }
           haptic(); open = open === c.id ? null : c.id; render(true);
         });
         if (open !== c.id) return row;
@@ -398,7 +686,7 @@ W.apps = {
     const head = h('div', 'w-title', o.title || en('Apps'), h('span', 'ap-count'));
     const search = h('input', 'ap-search');
     search.type = 'search';
-    search.placeholder = 'Search apps';
+    search.placeholder = tp('Search apps');
     search.autocomplete = 'off';
     search.spellcheck = false;
     search.addEventListener('input', () => { q = search.value.trim().toLowerCase(); render(true); });
@@ -407,14 +695,14 @@ W.apps = {
 
     const load = async () => { try { data = await api('/apps', 'GET', 10_000); } catch (_) { return false; } };
     const open = async (a) => {
-      if (!data?.canOpen) { toast('Opening apps needs an All apps widget saved on a page'); return; }
+      if (!data?.canOpen) { toast(tp('Opening apps needs an All apps widget saved on a page')); return; }
       haptic();
       busy = a.id; render(true);
       try {
         const r = await fetch(`${API}/apps/open?id=${encodeURIComponent(a.id)}`, { method: 'POST', cache: 'no-store', headers: PANEL_HEADERS });
         const j = await r.json().catch(() => ({}));
         if (r.ok) toast(`Opening ${a.name}`, 'ok'); else toast(j.error || `Could not open ${a.name}`, 'err');
-      } catch (_) { toast('The PC did not answer', 'err'); }
+      } catch (_) { toast(tp('The PC did not answer'), 'err'); }
       busy = null; render(true);
     };
     const rank = (a) => { const i = pinned.indexOf(a.name.toLowerCase()); return i < 0 ? pinned.length : i; };
@@ -459,8 +747,8 @@ W.apps = {
       if (!force && key === lastKey) return;
       lastKey = key;
       head.querySelector('.ap-count').textContent = all.length ? ` ${q ? items.length + '/' : ''}${all.length}` : '';
-      if (!data) { grid.replaceChildren(h('div', 'empty', 'Loading…')); return; }
-      if (!data.supported) { grid.replaceChildren(h('div', 'empty', 'The apps list is available on macOS for now')); return; }
+      if (!data) { grid.replaceChildren(h('div', 'empty', tp('Loading…'))); return; }
+      if (!data.supported) { grid.replaceChildren(h('div', 'empty', tp('The apps list is available on macOS for now'))); return; }
       if (!items.length) { grid.replaceChildren(h('div', 'empty', q ? `No apps match "${search.value.trim()}"` : 'No apps found')); return; }
       grid.replaceChildren(...items.map(tile));
     };
@@ -503,13 +791,13 @@ W.agenda = {
       lastKey = key;
       box.classList.toggle('small', small);
       if (!cal) { box.replaceChildren(h('div', 'empty', t('w.loading'))); return; }
-      if (!cal.updated && !list.length) { box.replaceChildren(h('div', 'w-title', o.title || en('Agenda')), h('div', 'empty', 'Add a calendar in Settings › General')); return; }
+      if (!cal.updated && !list.length) { box.replaceChildren(h('div', 'w-title', o.title || en('Agenda')), h('div', 'empty', tp('Add a calendar in Settings › General'))); return; }
       const timed = list.filter((e) => !e.allDay);
       const cur = timed.find((e) => e.start <= now);
       const next = timed.find((e) => e.start > now);
       if (small) {
         const e = cur || next || list[0];
-        if (!e) { box.replaceChildren(h('div', 'ag-big-t', 'No events'), h('div', 'ag-big-s', `next ${days} days`)); return; }
+        if (!e) { box.replaceChildren(h('div', 'ag-big-t', tp('No events')), h('div', 'ag-big-s', tpv('next {n} days', { n: days }))); return; }
         box.style.setProperty('--c', e.color);
         box.replaceChildren(
           h('div', 'ag-big-s', e === cur ? `Now · until ${hm(e.end)}` : e.allDay ? dayName(e.start) + ' · all day' : `${dayName(e.start) === t('time.today') ? inMin(e.start) || t('time.today') : dayName(e.start)} · ${hm(e.start)}`),
@@ -550,7 +838,7 @@ W.onair = {
   needs: ['state', 'push'],
   create(box, { o }) {
     box.classList.add('w-onair');
-    const sign = h('div', 'oa-sign', o.text || o.title || 'ON AIR'), sub = h('div', 'oa-sub');
+    const sign = h('div', 'oa-sign', o.text || o.title || tp('ON AIR')), sub = h('div', 'oa-sub');
     box.append(sign, sub);
     const src = o.source || 'both';
     return {
@@ -568,8 +856,8 @@ W.onair = {
         box.classList.toggle('on', on);
         const apps = [...new Set([...(mic ? p.micApps || [] : []), ...(cam ? p.cameraApps || [] : [])])];
         sub.replaceChildren(rich(on
-          ? [mic ? '🎙️' : '', cam ? '📷' : '', obsLive ? (obs.streaming ? 'OBS live' : 'OBS recording') : '', apps.join(', ') || (pushed && typeof pv === 'string' ? pv : '')].filter(Boolean).join(' ')
-          : (src === 'mic' || src === 'camera') && p && p.mic == null ? 'Not detectable on this computer' : 'Off air'));
+          ? [mic ? '🎙️' : '', cam ? '📷' : '', obsLive ? (obs.streaming ? tp('OBS live') : tp('OBS recording')) : '', apps.join(', ') || (pushed && typeof pv === 'string' ? pv : '')].filter(Boolean).join(' ')
+          : (src === 'mic' || src === 'camera') && p && p.mic == null ? tp('Not detectable on this computer') : tp('Off air')));
       },
     };
   },
@@ -580,14 +868,14 @@ W.battery = {
   needs: ['tick'],
   create(box) {
     const dial = dialEl(), sub = h('div', 'g-sub');
-    box.append(dial, h('div', 'g-label', 'PHONE'), sub);
+    box.append(dial, h('div', 'g-label', tp('PHONE')), sub);
     const load = every(20_000, () => {
-      if (!bridge) { dial.set(0, '—'); sub.textContent = 'Only on the phone'; return; }
+      if (!bridge) { dial.set(0, '—'); sub.textContent = tp('Only on the phone'); return; }
       try {
         const b = JSON.parse(bridge.battery());
         box.style.setProperty('--q', b.plugged ? '#22c55e' : b.level <= 20 ? '#ef4444' : b.level <= 40 ? '#f59e0b' : '#84cc16');
         dial.set(b.level, b.level, '%');
-        sub.replaceChildren(rich((b.plugged ? '⚡ Charging' : 'On battery') + (b.temp ? ` · ${b.temp.toFixed(0)}°C` : '')));
+        sub.replaceChildren(rich((b.plugged ? '⚡ ' + tp('Charging') : tp('On battery')) + (b.temp ? ` · ${b.temp.toFixed(0)}°C` : '')));
       } catch (_) {}
     });
     return { update: load };
@@ -607,9 +895,9 @@ W.pcswitch = {
       const key = JSON.stringify([pcs, usb, !!bridge]);
       if (key === shown) return;
       shown = key;
-      if (!bridge) { row.replaceChildren(h('div', 'empty', 'Only on the phone')); sub.textContent = ''; return; }
+      if (!bridge) { row.replaceChildren(h('div', 'empty', tp('Only on the phone'))); sub.textContent = ''; return; }
       if (pcs.length < 2) {
-        row.replaceChildren(h('div', 'empty', pcs.length ? 'Pair another computer over Wi-Fi to switch here' : 'No computer paired over Wi-Fi'));
+        row.replaceChildren(h('div', 'empty', pcs.length ? tp('Pair another computer over Wi-Fi to switch here') : tp('No computer paired over Wi-Fi')));
         sub.textContent = '';
         return;
       }
@@ -640,9 +928,9 @@ W.topprocs = {
         const pc = D.state?.pc;
         if (byMem && pc?.ramTotalGb) {
           const pct = Math.round((pc.ramUsedGb / pc.ramTotalGb) * 100);
-          title.replaceChildren(en(`Top memory (${pct}% · ${Math.round(pc.ramUsedGb)}/${Math.round(pc.ramTotalGb)} GB)`));
+          title.replaceChildren(en('Top memory'), ` (${pct}% · ${Math.round(pc.ramUsedGb)}/${Math.round(pc.ramTotalGb)} GB)`);
         } else if (!byMem && pc?.cpu != null) {
-          title.replaceChildren(en(`Top CPU (${Math.round(pc.cpu)}%)`));
+          title.replaceChildren(en('Top CPU'), ` (${Math.round(pc.cpu)}%)`);
         }
         const data = D.procs;
         if (!data?.groups?.length) { rowMap.clear(); list.replaceChildren(h('div', 'empty', t('w.measuring'))); return; }
@@ -682,11 +970,11 @@ W.quotaring = {
     const render = () => {
       const p = quotaProviders().find((x) => x.id === prov);
       const l = p?.limits?.[idx];
-      if (!l) { dial.set(0, '—'); label.textContent = `${st.logo} ${p?.name || prov}`; sub.textContent = D.quotas ? 'No data' : 'Waiting…'; return; }
+      if (!l) { dial.set(0, '—'); label.textContent = `${st.logo} ${p?.name || prov}`; sub.textContent = D.quotas ? tp('No data') : tp('Waiting…'); return; }
       const pace = paceInfo(l);
       dial.style.setProperty('--qc', l.percent >= 95 ? '#ef4444' : l.percent >= 80 ? '#f59e0b' : 'var(--q)');
       dial.set(l.percent, Math.round(l.percent), '%', pace?.elapsed);
-      label.textContent = `${st.logo} ${p.name} · ${l.label}`;
+      label.textContent = `${st.logo} ${p.name} · ${quotaText(l.label)}`;
       sub.textContent = l.resetsAt ? 'resets in ' + fmtDur(l.resetsAt - Date.now()) : '';
       sub.className = 'g-sub ' + (pace?.cls === 'over' ? 'hot' : '');
     };
@@ -758,10 +1046,10 @@ W.rules = {
         const k = JSON.stringify([rules, active, paused]);
         if (k === key) return;
         key = k;
-        btn.replaceChildren(icon(paused ? 'play' : 'pause', 'm'), paused ? 'Resume' : 'Pause');
+        btn.replaceChildren(icon(paused ? 'play' : 'pause', 'm'), paused ? tp('Resume') : tp('Pause'));
         btn.hidden = !D.state;
         box.classList.toggle('paused', !!paused);
-        if (!rules.length) { list.replaceChildren(h('div', 'empty', 'Add rules in Settings › Rules')); return; }
+        if (!rules.length) { list.replaceChildren(h('div', 'empty', tp('Add rules in Settings › Rules'))); return; }
         const sorted = [...rules].sort((a, b) => active.includes(b.id) - active.includes(a.id));
         list.replaceChildren(...(paused ? [h('div', 'ru-note', `Paused until ${fmtHM(new Date(rulesPaused))}`)] : []),
           ...sorted.map((r) => h('div', 'ru-row' + (active.includes(r.id) && !paused ? ' on' : ''),
@@ -787,7 +1075,7 @@ W.chargecare = {
       band.style.strokeDasharray = `${(C * (max - min)) / 100} ${C}`;
       band.style.strokeDashoffset = String((-C * min) / 100);
       band.style.opacity = ch.enabled ? '' : '0';
-      if (!bridge?.battery) { q('.cc-pct').textContent = '—'; q('.cc-text').textContent = 'Only on the phone'; return; }
+      if (!bridge?.battery) { q('.cc-pct').textContent = '—'; q('.cc-text').textContent = tp('Only on the phone'); return; }
       let b;
       try { b = JSON.parse(bridge.battery()); } catch (_) { return; }
       if (!(b.level >= 0)) return;
@@ -867,7 +1155,7 @@ W.gpu = {
         if (!g) {
           label.textContent = 'GPU';
           name.textContent = '';
-          big.replaceChildren(h('div', 'empty', !D.state ? 'Waiting…' : idx ? 'No second GPU' : 'No GPU data'));
+          big.replaceChildren(h('div', 'empty', !D.state ? tp('Waiting…') : idx ? tp('No second GPU') : tp('No GPU data')));
           rows.replaceChildren();
           chips.replaceChildren();
           return;
@@ -876,22 +1164,22 @@ W.gpu = {
         name.textContent = shortGpu(g.name);
         name.title = g.name;
 
-        const temps = [g.temp != null ? `${Math.round(g.temp)}°C` : null, g.hotSpot != null ? `hot spot ${Math.round(g.hotSpot)}°` : null,
-          g.memTemp != null ? `memory ${Math.round(g.memTemp)}°` : null].filter(Boolean).join(' · ');
-        big.replaceChildren(h('b', null, g.util != null ? String(Math.round(g.util)) : '—'), h('small', null, '% load'), h('span', 'gd-temp', temps));
+        const temps = [g.temp != null ? `${Math.round(g.temp)}°C` : null, g.hotSpot != null ? tpv('hot spot {n}°', { n: Math.round(g.hotSpot) }) : null,
+          g.memTemp != null ? tpv('memory {n}°', { n: Math.round(g.memTemp) }) : null].filter(Boolean).join(' · ');
+        big.replaceChildren(h('b', null, g.util != null ? String(Math.round(g.util)) : '—'), h('small', null, tp('% load')), h('span', 'gd-temp', temps));
 
         const list = [];
         const mem = gpuMem(g);
-        if (mem) list.push(meter(mem.label === 'VRAM' ? 'VRAM' : 'GPU memory', `${r1(mem.used)} / ${Math.round(mem.total)} GB`, (mem.used / mem.total) * 100));
-        if (!g.integrated && g.sharedTotal && g.sharedUsed != null) list.push(meter('Shared memory', `${r1(g.sharedUsed)} GB`, (g.sharedUsed / g.sharedTotal) * 100, '#64748b'));
+        if (mem) list.push(meter(mem.label === 'VRAM' ? 'VRAM' : tp('GPU memory'), `${r1(mem.used)} / ${Math.round(mem.total)} GB`, (mem.used / mem.total) * 100));
+        if (!g.integrated && g.sharedTotal && g.sharedUsed != null) list.push(meter(tp('Shared memory'), `${r1(g.sharedUsed)} GB`, (g.sharedUsed / g.sharedTotal) * 100, '#64748b'));
         if (g.power != null) {
-          list.push(meter('Power', g.powerLimit ? `${Math.round(g.power)} / ${Math.round(g.powerLimit)} W` : `${Math.round(g.power)} W`,
+          list.push(meter(tp('Power'), g.powerLimit ? `${Math.round(g.power)} / ${Math.round(g.powerLimit)} W` : `${Math.round(g.power)} W`,
             g.powerLimit ? (g.power / g.powerLimit) * 100 : g.powerPct, '#facc15'));
-        } else if (g.powerPct != null) list.push(meter('Power', `${Math.round(g.powerPct)}% of limit`, g.powerPct, '#facc15'));
+        } else if (g.powerPct != null) list.push(meter(tp('Power'), tpv('{n}% of limit', { n: Math.round(g.powerPct) }), g.powerPct, '#facc15'));
         const hottest = Math.max(g.temp ?? -1, g.hotSpot ?? -1);
         if (hottest >= 0) {
           const max = g.tempMax || (g.hotSpot != null ? 110 : 100);
-          list.push(meter('Temperature', `${Math.round(hottest)} / ${Math.round(max)}°C`, (hottest / max) * 100, heat(hottest, max)));
+          list.push(meter(tp('Temperature'), `${Math.round(hottest)} / ${Math.round(max)}°C`, (hottest / max) * 100, heat(hottest, max)));
         }
         rows.replaceChildren(...list);
 

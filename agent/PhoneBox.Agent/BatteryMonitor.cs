@@ -11,11 +11,15 @@ public sealed record DeviceBattery(string Name, int Level, string Kind, bool? Ch
 ///  - Windows: Bluetooth battery property via SetupAPI (what Settings › Bluetooth shows) and Razer USB HID devices.
 ///  - Linux: UPower (BlueZ devices, Logitech receivers, the laptop battery).
 ///  - macOS: ioreg (Magic Mouse / Keyboard / Trackpad) and system_profiler (AirPods and other headphones).
-/// Read once a minute, only while a phone shows the widget.
+/// Read every 20 seconds (a minute on macOS, where system_profiler is slow), only while a phone shows the widget.
 /// </summary>
 public sealed partial class BatteryMonitor(ILogger<BatteryMonitor> log) : BackgroundService
 {
     private const long NoRequest = long.MinValue;
+    internal const long ActiveRefreshIntervalMs = 20_000;
+    /// <summary>macOS reads headphones with system_profiler, which takes seconds of CPU: keep it at once a minute.</summary>
+    internal const long MacRefreshIntervalMs = 60_000;
+    internal static long RefreshIntervalMs(bool macOS) => macOS ? MacRefreshIntervalMs : ActiveRefreshIntervalMs;
     private volatile IReadOnlyList<DeviceBattery> _devices = [];
 #if WINDOWS
     private readonly object _publishLock = new();
@@ -39,7 +43,7 @@ public sealed partial class BatteryMonitor(ILogger<BatteryMonitor> log) : Backgr
             var lastRequest = Interlocked.Read(ref _lastRequest);
             var now = Environment.TickCount64;
             var wanted = lastRequest != NoRequest && now - lastRequest < 120_000;
-            if (wanted && (_readAt is null || now - _readAt.Value > 60_000))
+            if (wanted && (_readAt is null || now - _readAt.Value > RefreshIntervalMs(OperatingSystem.IsMacOS())))
             {
                 _readAt = now;
 #if WINDOWS

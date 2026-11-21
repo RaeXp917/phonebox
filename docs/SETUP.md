@@ -38,8 +38,8 @@ Setup installs the [latest release](https://github.com/ersinkoc/phonebox/release
    | Linux | `~/.local/share/PhoneBox/app` | `~/.config/PhoneBox` |
    | macOS | `~/Library/Application Support/PhoneBox/app` | `~/Library/Application Support/PhoneBox` |
 
-   Then it asks whether to start PhoneBox at login: a Startup-folder shortcut on Windows, a systemd user service
-   on Linux, a launchd agent on macOS.
+   It adds a Start Menu shortcut on Windows, and asks whether to start PhoneBox at login: a Startup-folder shortcut
+   on Windows, a systemd user service on Linux, a launchd agent on macOS.
 6. **Puts the app on the phone over USB**, if you want. It shows how to turn on USB debugging and waits for the phone.
 7. **Starts the agent** and opens its settings at <http://127.0.0.1:8765>.
 
@@ -98,7 +98,8 @@ curl -fsSL https://raw.githubusercontent.com/ersinkoc/phonebox/main/setup.sh | b
   `plugdev` group (`sudo usermod -aG plugdev $USER`, then log out and in). Setup points this out when it happens.
 - **On macOS**, the agent is signed with PhoneBox's own certificate, not an Apple Developer ID. The first time,
   macOS may ask whether it may control Music or Spotify (for Now Playing), or accept incoming connections (with Wi-Fi
-  on). Shortcuts that press keys need *System Settings › Privacy & Security › Accessibility* for PhoneBoxAgent; it
+  on). Shortcuts that press keys, and the Trackpad widget (its mouse events and its gestures), need *System Settings ›
+  Privacy & Security › Accessibility* for PhoneBoxAgent; it
   carries over to later updates. Before 0.9.22 the agent was signed ad hoc, and macOS dropped the permission with every
   update, so after updating from an older version allow it once more: remove PhoneBoxAgent there with *−* and add it
   again, even if it is listed and switched on ([#269](https://github.com/ersinkoc/phonebox/issues/269)).
@@ -157,7 +158,8 @@ The settings are at <http://127.0.0.1:8765>, on Windows also from the tray icon.
 
 ### Stop and start the agent
 
-On Windows, use **Quit** in the tray menu; with **Start with Windows** on, it starts again at the next sign-in.
+On Windows, use **Quit** in the tray menu. Start it again from the Start Menu (search for **PhoneBox**); with
+**Start with Windows** on, it also starts at the next sign-in.
 On Linux, setup installs a systemd user service named `phonebox` (no sudo needed):
 
 ```sh

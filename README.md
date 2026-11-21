@@ -10,12 +10,22 @@
   <a href="docs/README.es.md">Español</a> ·
   <a href="docs/README.it.md">Italiano</a> ·
   <a href="docs/README.pt.md">Português</a> ·
+  <a href="docs/README.pt-BR.md">Português (Brasil)</a> ·
   <a href="docs/README.nl.md">Nederlands</a> ·
   <a href="docs/README.pl.md">Polski</a> ·
   <a href="docs/README.ru.md">Русский</a> ·
   <a href="docs/README.el.md">Ελληνικά</a> ·
   <a href="docs/README.vi.md">Tiếng Việt</a> ·
-  <a href="docs/README.zh.md">中文 (简体)</a>
+  <a href="docs/README.zh.md">中文 (简体)</a> ·
+  <a href="docs/README.ja.md">日本語</a> ·
+  <a href="docs/README.ko.md">한국어</a> ·
+  <a href="docs/README.id.md">Bahasa Indonesia</a> ·
+  <a href="docs/README.th.md">ไทย</a> ·
+  <a href="docs/README.uk.md">Українська</a> ·
+  <a href="docs/README.hi.md">हिन्दी</a> ·
+  <a href="docs/README.cs.md">Čeština</a> ·
+  <a href="docs/README.ar.md">العربية</a> ·
+  <a href="docs/README.zh-Hant.md">中文（繁體）</a>
 </p>
 
 <p align="center"><b>Turn an old Android phone into a desk panel for your computer.</b><br>
@@ -40,7 +50,7 @@ Windows, Linux and macOS. No root, PhoneBox account or cloud service required.</
 <sub>Example layouts with demo data.</sub></p>
 
 PhoneBox pairs a full-screen **Android app** with a small **desktop agent**. Build your panel in a browser-based
-visual editor: **124 widgets**, **30 templates**, multiple pages and a live preview. Connect several phones with
+visual editor: **126 widgets**, **30 templates**, multiple pages and a live preview. Connect several phones with
 their own layouts, or switch one phone between paired computers.
 
 ## What you can do
@@ -48,14 +58,14 @@ their own layouts, or switch one phone between paired computers.
 | Use it for | What appears on the phone |
 |---|---|
 | **PC monitoring** | CPU, GPU, RAM, disks, network and ping; charts, GPU details and process controls |
-| **AI coding** | Claude, Codex and Antigravity quotas, reset times and burn-rate forecasts; local Claude Code and Codex sessions; GitHub reviews and CI status |
+| **AI coding** | Claude, Codex and Antigravity quotas, reset times and burn-rate forecasts; local Claude Code, Codex and OpenCode sessions (native and inside WSL); GitHub reviews and CI status |
 | **Touch controls** | App and URL shortcuts, key combinations and macros; application audio, microphone, media, OBS and system controls through [Control Deck](docs/CONTROL-DECK.md) |
 | **Everyday use** | Now Playing, internet radio, clocks, weather, calendars, notes, checklists, pomodoro and timers |
 | **Automation** | Webhook values and notifications, Home Assistant controls and rules that react to activity on the computer |
 
-Tap an AI session for its model, timing and token details. Opt in to Claude Code permission prompts to answer
-**Allow** or **Deny** from the phone. Optional [CodexBar integration](docs/GUIDE.md#widgets) adds quota providers
-and a cost overview.
+Tap an AI session for its model, timing and token details. Opt in to Codex, Claude Code or OpenCode permission prompts
+to answer **Allow**, **Deny** (and **Always allow** for OpenCode) from the phone. Optional
+[CodexBar integration](docs/GUIDE.md#widgets) adds quota providers and a cost overview.
 
 <p align="center"><a href="docs/tour-0.6.mp4"><img src="docs/tour-0.6.gif" width="780" alt="PhoneBox tour showing notifications, a Claude Code permission prompt and automatic page switching"></a><br>
 <sub>A tour with demo data: notifications, permission prompts and automatic page switching. <a href="docs/tour-0.6.mp4">Watch the MP4</a></sub></p>
@@ -171,9 +181,20 @@ release builds. See the [full compatibility table](docs/SETUP.md#what-works-wher
 
 The [UMIDIGI BISON extras](extras/umidigi-bison) contain the reversible, no-root tune-up used on the original development phone.
 
+## Community add-ons
+
+Add-ons are written and maintained by their authors. PhoneBox doesn't review or ship them. They run with your own
+rights on the computer and can change PhoneBox settings through `PUT /api/settings`, so read what an add-on does
+before you install it.
+
+| Add-on | What it does | What it sends outside the PC |
+|---|---|---|
+| [PhoneBox Games Tab](https://github.com/lucasaz/phonebox-games-tab) (Windows) | A Games page with live FPS, cover art and play time, through the push API and a Custom HTML widget | Store / Xbox apps' package names, with the Windows display language and region, to the Microsoft Store catalog (`displaycatalog.mp.microsoft.com`); the phone loads cover images from Microsoft's image servers and from Steam's, whose URL contains the game's Steam app ID |
+
 ## Security & privacy
 
-The desktop settings server listens on `127.0.0.1:8765`; USB reaches it through `adb reverse`.
+The desktop settings server listens on `127.0.0.1:8765`. USB reaches the agent through `adb reverse` on a loopback
+port of its own, over TLS pinned like Wi-Fi, with a key the phone app makes and the agent reads over adb.
 Optional Wi-Fi uses HTTPS on port 8766 with a pinned certificate and a paired key. Settings and pairing endpoints
 stay local. The phone requests configured actions by ID; commands and integration credentials stay on the computer.
 

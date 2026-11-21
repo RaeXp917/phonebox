@@ -6,8 +6,6 @@ people who proposed or prototyped something are credited in the [changelog](../C
 
 ## Being built in-house
 
-- **Antigravity sessions on the panel:** detect running Antigravity sessions, the way Claude Code and Codex
-  sessions already show up (reference [#36](https://github.com/ersinkoc/phonebox/pull/36)).
 - **Kiosk page for older devices:** a panel that runs in an older browser or tablet, with a paired key that can only
   do what the panel needs ([#41](https://github.com/ersinkoc/phonebox/issues/41); reference
   [#43](https://github.com/ersinkoc/phonebox/pull/43); old iPads in [#222](https://github.com/ersinkoc/phonebox/issues/222)).
@@ -16,32 +14,42 @@ people who proposed or prototyped something are credited in the [changelog](../C
 
 ## Contributions in progress
 
-- **Discord widget: show who is speaking** ([#226](https://github.com/ersinkoc/phonebox/issues/226)).
+- **Discord login through the desktop app** ([#338](https://github.com/ersinkoc/phonebox/issues/338)): Discord refuses
+  `AUTHORIZE` over IPC both without `redirect_uri` (0.9.24) and with it (0.9.25); the working combination is being
+  tested against a real Discord client.
 - **Feeding PhoneBox from MQTT**: a bridge script and a guide example for pushed values and notifications
   ([#241](https://github.com/ersinkoc/phonebox/issues/241)).
 - **Rules for pushed values**: a "not updated for N seconds" condition, `>=` / `<=`, and a separate release threshold
   ([#242](https://github.com/ersinkoc/phonebox/issues/242), pull request
   [#245](https://github.com/ersinkoc/phonebox/pull/245), in 0.9.21, did the first two).
-- **Codex permission prompts on the phone**: answer Codex's own approval requests with Allow / Deny, like Claude Code's
-  ([#253](https://github.com/ersinkoc/phonebox/issues/253), pull request
-  [#254](https://github.com/ersinkoc/phonebox/pull/254)).
 - **Voice commands**: say what you want and a language model of your choice (local through Ollama, or a hosted one)
   picks from the shortcuts you allowed; opt-in, off by default ([#257](https://github.com/ersinkoc/phonebox/issues/257)).
-- **Pomodoro: an optional sound when a step ends**, off by default and silent in night mode
-  ([#267](https://github.com/ersinkoc/phonebox/issues/267)).
-- **Steam friends and activity widgets** ([#289](https://github.com/ersinkoc/phonebox/issues/289), pull request
-  [#244](https://github.com/ersinkoc/phonebox/pull/244)): scope agreed; waiting for a rebase and the review fixes.
-- **Immich album as a photo frame source** ([#278](https://github.com/ersinkoc/phonebox/issues/278), pull requests
-  [#279](https://github.com/ersinkoc/phonebox/pull/279) and [#280](https://github.com/ersinkoc/phonebox/pull/280)).
-- **Windows audio mixer and device batteries** ([#283](https://github.com/ersinkoc/phonebox/issues/283)): one mixer
-  control per app with the names Windows shows, idle helper sessions hidden, a mute icon, compact output and
-  microphone pickers with short labels, Razer Barracuda Pro batteries, and no stale readings from disconnected
-  Bluetooth devices. The reporter has a working build; to come as several small pull requests.
+
+- **Steam library widget** ([#344](https://github.com/ersinkoc/phonebox/issues/344)): installed games, most recently
+  played first, covers and update progress, read from Steam's own files with no API key or sign-in. Starting a game
+  from the phone is a separate per-widget option, off by default and asking first, and the agent starts only an
+  installed game's app id through Steam's URL handler.
+
+- **Pomodoro focus history** ([#350](https://github.com/ersinkoc/phonebox/issues/350)): an option on the Pomodoro
+  widget, off by default, with a small line chart of finished focus minutes per day for the last seven days, kept on
+  the phone with the widget's own state.
+- **One "AI providers I use" setting** ([#351](https://github.com/ersinkoc/phonebox/issues/351)): a list in Settings ›
+  General, all on by default, that the Clock's status line, Quotas and the Quota ring's picker follow unless a widget
+  sets its own providers.
+
+- **More of Discord on the panel** ([#356](https://github.com/ersinkoc/phonebox/issues/356)), in separate pull
+  requests: a Voice Activity / Push-to-Talk toggle; favourite servers and channels picked on the phone; who is in each
+  voice channel; a global **Allow Discord control** setting (off by default) for custom widgets and shortcuts. Later,
+  each behind its own switch, off by default and kept in memory only: a read-only chat tab and unread dots
+  (`messages.read`), and screen sharing (`rpc.screenshare.*`).
 
 ## Open for a contributor
 
 Agreed in principle, not being built in-house. Say so on the issue before starting.
 
+- **Typing from the phone's keyboard**: a text field and a row of keys (Enter, Backspace, Esc, Tab, arrows, optionally
+  Ctrl / Alt / Shift) on the Dictation widget, behind its **Type the text on the computer** switch and through
+  `/api/dictate`; nothing logged or stored ([#320](https://github.com/ersinkoc/phonebox/issues/320)).
 - **Photo frame pictures as the page background** ([#288](https://github.com/ersinkoc/phonebox/issues/288)): a
   per-page background from the photo frame's folder, dimmed under the widgets, using the same `/api/photos` feed.
 - **Android screen saver (DreamService)** ([#287](https://github.com/ersinkoc/phonebox/issues/287)): show the panel as
@@ -51,6 +59,23 @@ Agreed in principle, not being built in-house. Say so on the issue before starti
   way to run the Linux agent without a desktop session, an address to advertise for Wi-Fi pairing from behind
   container networking, and persistent data. Remote access to the settings page needs its own sign-in first; until
   then an SSH tunnel to the loopback port is the safe way.
+- **Night screen as a rule action** ([#330](https://github.com/ersinkoc/phonebox/issues/330)): while a rule holds
+  (for example *PC away for 5 minutes*), the phone shows the night screen at its own brightness, and goes back when the
+  rule ends. The schedule stays as it is, and a tap still wakes the screen for a while.
+- **Night screen while the computer is unreachable** ([#347](https://github.com/ersinkoc/phonebox/issues/347)): an
+  option on the phone that dims to the night screen after the agent has been out of reach for a few minutes (USB
+  unplugged, the computer off or asleep), and wakes when it answers again. It has to be decided on the phone, since a
+  computer that is off runs no rules; the **Wake the PC** button stays reachable with a tap.
+- **Pushed values without refetching the whole list** ([#329](https://github.com/ersinkoc/phonebox/issues/329)): the
+  change event carries the key and its new value, and the phone fetches all of `/api/push` again only when it missed a
+  version. A value pushed every second, such as a game's FPS, then costs one small event instead of the full list.
+
+- **Synced lyrics** ([#339](https://github.com/ersinkoc/phonebox/issues/339)): a widget next to Now playing that shows
+  the timed lyric of the current track and follows the playback position. The agent looks the track up on LRCLIB
+  (title, artist, album, duration) only when the user turns the lookup on and only while such a widget is on an enabled
+  page; results stay in memory, and the phone never contacts LRCLIB.
+- **A larger device switcher** ([#340](https://github.com/ersinkoc/phonebox/issues/340)): bigger touch targets for the
+  computers in the all-pages overview, each with an icon (emoji or uploaded picture) and a colour set per computer.
 
 ## Waiting on someone else
 
@@ -67,6 +92,9 @@ Agreed in principle, not being built in-house. Say so on the issue before starti
 
 ## Waiting on a report
 
+- **Razer BlackShark V2 Pro missing from Device batteries after 0.9.24**
+  ([#326](https://github.com/ersinkoc/phonebox/issues/326)): dongle or Bluetooth, Synapse, and what Windows reports are
+  needed to tell whether the new filter for disconnected Bluetooth devices hides it.
 - **Intel GPU load on Linux** ([#224](https://github.com/ersinkoc/phonebox/issues/224)): in 0.9.20, to be confirmed
   on real hardware.
 - **Network widget about 4x too high on a Realtek USB 2.5GbE adapter**

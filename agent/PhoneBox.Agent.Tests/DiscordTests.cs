@@ -246,6 +246,151 @@ public sealed class DiscordTests : IDisposable
         }
     }
 
+    // ---- who is speaking ----
+
+    private static DiscordSnapshot InRoom(string channel = "c1") => new(true, null, "me", false, false, channel, "Room", "voice",
+        [new("7", "Ana", false, false, null), new("8", "Bo", false, false, null)], [], []);
+
+    private static string Speaking(string evt, string user, string? channel = "c1") =>
+        new JsonObject { ["cmd"] = "DISPATCH", ["evt"] = evt, ["data"] = new JsonObject { ["user_id"] = user, ["channel_id"] = channel } }.ToJsonString();
+
+    private static bool IsSpeaking(DiscordMonitor m, string id) => m.Snapshot().Members.Single(x => x.Id == id).Speaking;
+
+    [Fact]
+    public async Task A_member_speaks_between_SPEAKING_START_and_SPEAKING_STOP()
+    {
+        var monitor = Monitor(false);
+        monitor.PublishPoll(0, false, false, InRoom());
+        monitor.SpeakingChannel = "c1";
+        var (server, client) = await Pipe();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await using (server) await using (client)
+        {
+            var loop = monitor.ReadLoop(client, cts.Token);
+            await server.WriteAsync(Frame(1, Speaking("SPEAKING_START", "7")), cts.Token);
+            await Until(() => IsSpeaking(monitor, "7"));
+            Assert.False(IsSpeaking(monitor, "8"));
+            await server.WriteAsync(Frame(1, Speaking("SPEAKING_STOP", "7")), cts.Token);
+            await Until(() => !IsSpeaking(monitor, "7"));
+            cts.Cancel();
+            try { await loop; } catch (OperationCanceledException) { }
+        }
+    }
+
+    [Fact]
+    public void Speaking_events_from_another_channel_or_outside_a_channel_are_ignored()
+    {
+        var monitor = Monitor(false);
+        monitor.PublishPoll(0, false, false, InRoom());
+        monitor.ApplySpeaking("SPEAKING_START", JsonNode.Parse("""{"user_id":"7","channel_id":"c1"}"""));
+        Assert.False(IsSpeaking(monitor, "7"));                                   // not following a channel yet
+        monitor.SpeakingChannel = "c1";
+        monitor.ApplySpeaking("SPEAKING_START", JsonNode.Parse("""{"user_id":"7","channel_id":"c2"}"""));
+        Assert.False(IsSpeaking(monitor, "7"));                                   // late event from the channel left
+        monitor.ApplySpeaking("SPEAKING_START", JsonNode.Parse("""{"user_id":"7"}"""));
+        Assert.True(IsSpeaking(monitor, "7"));                                    // older Discord builds send no channel id
+    }
+
+    [Fact]
+    public void Switching_channels_forgets_who_was_speaking()
+    {
+        var monitor = Monitor(false);
+        monitor.PublishPoll(0, false, false, InRoom());
+        monitor.SpeakingChannel = "c1";
+        monitor.ApplySpeaking("SPEAKING_START", JsonNode.Parse("""{"user_id":"7","channel_id":"c1"}"""));
+        Assert.True(IsSpeaking(monitor, "7"));
+        monitor.SpeakingChannel = "c2";                                           // you moved; no STOP will come from c1
+        monitor.SpeakingChannel = "c1";                                           // and back again
+        Assert.False(IsSpeaking(monitor, "7"));
+    }
+
+    [Fact]
+    public void A_snapshot_of_another_channel_shows_no_one_speaking()
+    {
+        var monitor = Monitor(false);
+        monitor.SpeakingChannel = "c1";
+        monitor.ApplySpeaking("SPEAKING_START", JsonNode.Parse("""{"user_id":"7","channel_id":"c1"}"""));
+        monitor.PublishPoll(0, false, false, InRoom("c2"));                       // the poll already sees the new channel
+        Assert.False(IsSpeaking(monitor, "7"));
+    }
+
+    [Fact]
+    public async Task The_answer_to_a_SUBSCRIBE_for_speaking_events_still_reaches_the_request()
+    {
+        var monitor = Monitor(false);
+        monitor.SpeakingChannel = "c1";
+        var (server, client) = await Pipe();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var waiting = new TaskCompletionSource<JsonNode?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        monitor._pending["sub"] = waiting;
+        await using (server) await using (client)
+        {
+            var loop = monitor.ReadLoop(client, cts.Token);
+            await server.WriteAsync(Frame(1, """{"cmd":"SUBSCRIBE","evt":"SPEAKING_START","nonce":"sub","data":{"evt":"SPEAKING_START"}}"""), cts.Token);
+            Assert.Equal("SPEAKING_START", (await waiting.Task.WaitAsync(cts.Token))!["evt"]!.GetValue<string>());
+            cts.Cancel();
+            try { await loop; } catch (OperationCanceledException) { }
+        }
+    }
+
+    // Answers the next request from the agent, after first sending a SPEAKING_START that arrives while it is pending.
+    private static async Task AnswerWithStartFirst(Stream server, string cmd, bool ok, CancellationToken ct)
+    {
+        var req = JsonNode.Parse((await ReadFrame(server, ct)).Body)!;
+        Assert.Equal(cmd, req["cmd"]!.GetValue<string>());
+        await server.WriteAsync(Frame(1, Speaking("SPEAKING_START", "7", "c2")), ct);
+        var answer = new JsonObject { ["cmd"] = cmd, ["nonce"] = req["nonce"]!.GetValue<string>(), ["evt"] = ok ? req["evt"]!.GetValue<string>() : "ERROR",
+            ["data"] = ok ? new JsonObject() : new JsonObject { ["message"] = "refused" } };
+        await server.WriteAsync(Frame(1, answer.ToJsonString()), ct);
+    }
+
+    [Fact]
+    public async Task Speaking_events_count_only_once_both_subscriptions_are_in_place()
+    {
+        var monitor = Monitor(false);
+        monitor.PublishPoll(0, false, false, InRoom("c2"));
+        monitor.SpeakingChannel = "c1";
+        var (server, client) = await Pipe();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await using (server) await using (client)
+        {
+            monitor._io = client;
+            var loop = monitor.ReadLoop(client, cts.Token);
+            var follow = monitor.FollowSpeaking("c1", "c2", cts.Token);
+            // a START during the switch is dropped: with only SPEAKING_START in place, its STOP might never come
+            foreach (var cmd in new[] { "UNSUBSCRIBE", "UNSUBSCRIBE", "SUBSCRIBE", "SUBSCRIBE" }) await AnswerWithStartFirst(server, cmd, true, cts.Token);
+            Assert.True(await follow);
+            Assert.False(IsSpeaking(monitor, "7"));
+            await server.WriteAsync(Frame(1, Speaking("SPEAKING_START", "7", "c2")), cts.Token);
+            await Until(() => IsSpeaking(monitor, "7"));
+            cts.Cancel();
+            try { await loop; } catch (OperationCanceledException) { }
+        }
+    }
+
+    [Fact]
+    public async Task After_a_refused_subscription_no_speaking_event_counts()
+    {
+        var monitor = Monitor(false);
+        monitor.PublishPoll(0, false, false, InRoom("c2"));
+        var (server, client) = await Pipe();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await using (server) await using (client)
+        {
+            monitor._io = client;
+            var loop = monitor.ReadLoop(client, cts.Token);
+            var follow = monitor.FollowSpeaking(null, "c2", cts.Token);
+            await AnswerWithStartFirst(server, "SUBSCRIBE", true, cts.Token);
+            await AnswerWithStartFirst(server, "SUBSCRIBE", false, cts.Token);           // SPEAKING_STOP refused
+            Assert.False(await follow);
+            Assert.Null(monitor.SpeakingChannel);
+            monitor.ApplySpeaking("SPEAKING_START", JsonNode.Parse("""{"user_id":"7","channel_id":"c2"}"""));
+            Assert.False(IsSpeaking(monitor, "7"));
+            cts.Cancel();
+            try { await loop; } catch (OperationCanceledException) { }
+        }
+    }
+
     // ---- images ----
 
     [Theory]
@@ -337,6 +482,17 @@ public sealed class DiscordTests : IDisposable
     }
 
     // --config with a settings file named like the login file: saving a login must not replace the settings.
+    [Fact]
+    public void Authorize_asks_for_a_code_without_naming_a_redirect()
+    {
+        // over IPC Discord refuses redirect_uri (#338, #343), and without response_type it asks for one (#316)
+        var args = DiscordMonitor.AuthorizeArgs("123");
+        Assert.Equal("123", args["client_id"]!.GetValue<string>());
+        Assert.Equal("code", args["response_type"]!.GetValue<string>());
+        Assert.False(args.ContainsKey("redirect_uri"));
+        Assert.Contains("rpc", args["scopes"]!.AsArray().Select(s => s!.GetValue<string>()));
+    }
+
     [Fact]
     public void The_login_file_never_is_the_settings_file()
     {

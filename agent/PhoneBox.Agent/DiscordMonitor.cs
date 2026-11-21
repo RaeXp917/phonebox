@@ -7,7 +7,7 @@ using System.Text.Json.Nodes;
 
 namespace PhoneBox.Agent;
 
-public sealed record DiscordMember(string Id, string Name, bool Muted, bool Deafened, string? Avatar);
+public sealed record DiscordMember(string Id, string Name, bool Muted, bool Deafened, string? Avatar, bool Speaking = false);
 public sealed record DiscordChannel(string Id, string Name, string? Guild, string? GuildId, string? GuildIcon);
 public sealed record DiscordNotification(long Ts, string Title, string Body);
 public sealed record DiscordSnapshot(bool Connected, string? Error, string? User, bool Muted, bool Deafened,
@@ -25,13 +25,14 @@ public sealed partial class DiscordMonitor(ConfigStore config, ILogger<DiscordMo
 {
     private static readonly string[] Scopes = ["rpc", "rpc.voice.read", "rpc.voice.write", "rpc.notifications.read"];
     private const string Redirect = "http://127.0.0.1";
+    private static readonly string[] SpeakingEvents = ["SPEAKING_START", "SPEAKING_STOP"];
 
     private volatile DiscordSnapshot _snap = Empty(null);
     private readonly object _lock = new();
     private readonly List<DiscordNotification> _notes = [];
     internal readonly ConcurrentDictionary<string, TaskCompletionSource<JsonNode?>> _pending = new(); // internal for tests
     private readonly SemaphoreSlim _send = new(1, 1);
-    private Stream? _io;
+    internal Stream? _io; // internal for tests
 
     private static DiscordSnapshot Empty(string? error) => new(false, error, null, false, false, null, null, null, [], [], []);
 
@@ -52,7 +53,64 @@ public sealed partial class DiscordMonitor(ConfigStore config, ILogger<DiscordMo
     public DiscordSnapshot Snapshot()
     {
         var wanted = NotesNow();
-        lock (_lock) return _snap with { Notifications = wanted ? [.. _notes] : [] };
+        lock (_lock)
+        {
+            var s = _snap;
+            var members = _speaking.Count == 0 || s.ChannelId != _speakingChannel ? s.Members
+                : [.. s.Members.Select(m => _speaking.Contains(m.Id) ? m with { Speaking = true } : m)];
+            return s with { Members = members, Notifications = wanted ? [.. _notes] : [] };
+        }
+    }
+
+    // Who is talking in the voice channel you are in, from Discord's SPEAKING_START / SPEAKING_STOP events (guarded by _lock).
+    private readonly HashSet<string> _speaking = [];
+    private string? _speakingChannel;
+
+    /// <summary>
+    /// The channel whose speaking events count. Setting it (on joining, switching or leaving a channel, and on
+    /// disconnect) forgets who was speaking, so a ring never carries over to another channel or a later call.
+    /// </summary>
+    internal string? SpeakingChannel
+    {
+        get { lock (_lock) return _speakingChannel; }
+        set { lock (_lock) { _speakingChannel = value; _speaking.Clear(); } }
+    }
+
+    /// <summary>
+    /// Moves the speaking subscriptions (covered by the rpc.voice.read scope) from the channel you were in to the one you
+    /// are in now, or sets them up again after a failure. No speaking event counts until both SPEAKING_START and
+    /// SPEAKING_STOP are in place: a START from the old channel, or one that arrives while only START is subscribed,
+    /// could leave a ring on that no STOP clears. False when Discord refused or didn't answer.
+    /// </summary>
+    internal async Task<bool> FollowSpeaking(string? from, string? to, CancellationToken ct)
+    {
+        SpeakingChannel = null;
+        try
+        {
+            if (from is not null)
+                foreach (var e in SpeakingEvents) await Request("UNSUBSCRIBE", new JsonObject { ["channel_id"] = from }, e, ct);
+            if (to is not null)
+                foreach (var e in SpeakingEvents) await Request("SUBSCRIBE", new JsonObject { ["channel_id"] = to }, e, ct);
+            SpeakingChannel = to;
+            return true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            log.LogDebug("discord: speaking events: {Msg}", ex.Message);
+            return false;
+        }
+    }
+
+    internal void ApplySpeaking(string evt, JsonNode? data)
+    {
+        var user = JsonStr((data as JsonObject)?["user_id"]);
+        var channel = JsonStr((data as JsonObject)?["channel_id"]);
+        lock (_lock)
+        {
+            // an event still on its way from the channel you just left, or one that arrives after leaving, is dropped
+            if (user is null || _speakingChannel is null || (channel is not null && channel != _speakingChannel)) return;
+            if (evt == "SPEAKING_START") _speaking.Add(user); else _speaking.Remove(user);
+        }
     }
 
     /// <summary>The user cancelled, the approval timed out or Discord refused the secret: retrying cannot help until the settings change.</summary>
@@ -118,6 +176,8 @@ public sealed partial class DiscordMonitor(ConfigStore config, ILogger<DiscordMo
             _guildChannels.Clear();
             var channelsAt = DateTime.MinValue;
             var channelsEvery = TimeSpan.FromSeconds(60);
+            string? speakingFor = null;
+            long speakingRetryAt = 0; // after a failed (un)subscribe: when to set the channel's subscriptions up again
             while (!ct.IsCancellationRequested && !reader.IsCompleted && config.Get().Discord.Enabled)
             {
                 // Notification text (DM content) is only asked for, and only sent on, while a widget shows it.
@@ -138,6 +198,14 @@ public sealed partial class DiscordMonitor(ConfigStore config, ILogger<DiscordMo
                 var rev = Volatile.Read(ref _voiceRev);
                 var vs = await Request("GET_VOICE_SETTINGS", null, null, ct);
                 var sel = await Request("GET_SELECTED_VOICE_CHANNEL", null, null, ct);
+                var selId = sel?["id"]?.GetValue<string>();
+                if (selId != speakingFor || (speakingRetryAt != 0 && Environment.TickCount64 >= speakingRetryAt))
+                {
+                    // A failure only costs the rings for this channel and the rest of the widget keeps working; the
+                    // channel's two subscriptions are set up again from scratch, at most every 30 s.
+                    speakingRetryAt = await FollowSpeaking(speakingFor, selId, ct) ? 0 : Environment.TickCount64 + 30_000;
+                    speakingFor = selId;
+                }
                 var members = sel?["voice_states"]?.AsArray().Select(v => new DiscordMember(
                     v?["user"]?["id"]?.GetValue<string>() ?? "",
                     v?["nick"]?.GetValue<string>() ?? v?["user"]?["global_name"]?.GetValue<string>() ?? v?["user"]?["username"]?.GetValue<string>() ?? "?",
@@ -155,6 +223,7 @@ public sealed partial class DiscordMonitor(ConfigStore config, ILogger<DiscordMo
         {
             _io = null;
             _notesWanted = false;
+            SpeakingChannel = null;
             stop.Cancel();
             try { await reader; } catch { }
             lock (_lock)
@@ -179,7 +248,7 @@ public sealed partial class DiscordMonitor(ConfigStore config, ILogger<DiscordMo
         }
         const string retry = " PhoneBox will not ask again until you change the Discord settings (or turn Discord off and on).";
         JsonNode? granted;
-        try { granted = await Request("AUTHORIZE", new JsonObject { ["client_id"] = cfg.ClientId, ["scopes"] = new JsonArray(Scopes.Select(s => (JsonNode)s).ToArray()) }, null, ct, TimeSpan.FromMinutes(2)); }
+        try { granted = await Request("AUTHORIZE", AuthorizeArgs(cfg.ClientId), null, ct, TimeSpan.FromMinutes(2)); }
         catch (TimeoutException) { throw new LoginRefusedException("PhoneBox was not approved in Discord in time." + retry); }
         catch (Exception ex) when (ex is not (OperationCanceledException or IOException)) { throw new LoginRefusedException($"Discord login was refused ({ex.Message})." + retry); }
         // no answer at all means the connection ended (Discord closed or restarted): that is not a refusal
@@ -196,6 +265,20 @@ public sealed partial class DiscordMonitor(ConfigStore config, ILogger<DiscordMo
         try { return await Auth(tokens.Access, ct); }
         catch (Exception ex) when (ex is not (OperationCanceledException or IOException)) { throw new LoginRefusedException($"Discord refused the new login ({ex.Message})." + retry); }
     }
+
+    /// <summary>
+    /// The AUTHORIZE request over Discord's local socket. Without <c>response_type</c> Discord answers
+    /// <c>invalid_request: Missing "redirect_uri"</c> (#316), and <c>redirect_uri</c> itself is only allowed over the
+    /// WebSocket transport: over IPC it is refused with "Redirect URI cannot be used in the RPC OAuth2 Authorization
+    /// flow" (#338, #343). With <c>response_type: code</c> and no redirect, Discord uses the application's first
+    /// registered redirect, which the token exchange then names (<see cref="Redirect"/>).
+    /// </summary>
+    internal static JsonObject AuthorizeArgs(string? clientId) => new()
+    {
+        ["client_id"] = clientId,
+        ["response_type"] = "code",
+        ["scopes"] = new JsonArray(Scopes.Select(s => (JsonNode)s).ToArray()),
+    };
 
     private async Task<string> Auth(string token, CancellationToken ct)
     {
@@ -358,6 +441,11 @@ public sealed partial class DiscordMonitor(ConfigStore config, ILogger<DiscordMo
                 }
                 if (op == 4 || msg is not JsonObject obj) continue; // PONG or non-object payload
                 var evt = JsonStr(obj["evt"]);
+                if (JsonStr(obj["cmd"]) == "DISPATCH" && evt is "SPEAKING_START" or "SPEAKING_STOP")
+                {
+                    ApplySpeaking(evt, obj["data"]);
+                    continue;
+                }
                 if (evt == "NOTIFICATION_CREATE")
                 {
                     if (!NotesNow() || obj["data"] is not JsonObject d) continue;
