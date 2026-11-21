@@ -681,11 +681,13 @@ html.beat-3 .sess.busy .st, html.beat-4 .sess.shell .st, html.beat-2 .sess.waiti
 .pl-v { color: var(--lc, var(--muted)); white-space: nowrap; font-weight: 600; }
 .w-mirror { padding: 9px 12px; display: flex; flex-direction: column; }
 .mirror-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; margin-top: 3px; touch-action: pan-y; }
-.mirror-row { display: flex; gap: 7px; align-items: flex-start; }
-.mirror-dot { width: 19px; height: 19px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; color: #fff; background: var(--d, #64748b); }
+.mirror-row { display: flex; gap: 8px; align-items: flex-start; }
+.mirror-icon { width: 20px; height: 20px; flex: none; border-radius: 6px; overflow: hidden; display: block; }
+.mirror-icon svg { width: 20px; height: 20px; display: block; }
+.mirror-dot { width: 20px; height: 20px; border-radius: 6px; flex: none; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; background: var(--d, #64748b); }
 .mirror-body { min-width: 0; flex: 1; }
-.mirror-top { display: flex; align-items: baseline; gap: 6px; }
-.mirror-top b { font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mirror-top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.mirror-sender, .mirror-top b { font-size: 12.5px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .mirror-app { font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); flex: none; }
 .mirror-time { margin-left: auto; font-size: 10px; color: var(--dim); flex: none; }
 .mirror-text { font-size: 11.5px; color: var(--text); opacity: .82; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

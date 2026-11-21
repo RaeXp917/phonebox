@@ -1300,6 +1300,42 @@ W.command = {
 const MIRROR_APPS = { Messenger: '#0084ff', Discord: '#5865f2', Teams: '#6264a7', Instagram: '#e1306c' };
 
 /**
+ * The four marques, drawn here as small inline SVGs: no runtime fetch, no bundled third-party artwork, and
+ * crisp at badge size. They are simplified shapes, recognisable at 20 px, keyed by the source package so the
+ * sender name can never decide the icon. Anything else falls back to a coloured initial.
+ */
+const MIRROR_ICONS = {
+  'com.instagram.android': '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="ig" x1="0" y1="1" x2="1" y2="0">'
+    + '<stop offset="0" stop-color="#feda75"/><stop offset=".35" stop-color="#fa7e1e"/><stop offset=".62" stop-color="#d62976"/>'
+    + '<stop offset="1" stop-color="#962fbf"/></linearGradient></defs><rect width="24" height="24" rx="6.4" fill="url(#ig)"/>'
+    + '<rect x="5.2" y="5.2" width="13.6" height="13.6" rx="4.4" fill="none" stroke="#fff" stroke-width="1.7"/>'
+    + '<circle cx="12" cy="12" r="3.6" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="16.6" cy="7.4" r="1.05" fill="#fff"/></svg>',
+  'com.facebook.orca': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6.4" fill="#0084ff"/>'
+    + '<path d="M12 4.6c-4.2 0-7.4 3-7.4 6.9 0 2.2 1 4.1 2.7 5.4v2.8l2.6-1.4c.6.2 1.3.3 2.1.3 4.2 0 7.4-3 7.4-6.9S16.2 4.6 12 4.6z" fill="#fff"/>'
+    + '<path d="M8.6 13.5l3.1-3.3 1.9 1.9 3.1-1.9-3.3 3.5-1.9-1.9z" fill="#0084ff"/></svg>',
+  'com.discord': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6.4" fill="#5865f2"/>'
+    + '<path d="M17.4 8.2a11 11 0 0 0-2.7-.9l-.2.4a9 9 0 0 1 2.4 1.2 10 10 0 0 0-8.5 0 9 9 0 0 1 2.4-1.2l-.2-.4c-1 .2-1.9.5-2.7.9-1.4 2.1-1.8 4.2-1.6 6.3a11 11 0 0 0 3.3 1.7l.7-1.1c-.4-.2-.8-.4-1.1-.7l.3-.2a8 8 0 0 0 6.5 0l.3.2c-.3.3-.7.5-1.1.7l.7 1.1a11 11 0 0 0 3.3-1.7c.2-2.5-.4-4.6-1.8-6.3z" fill="#fff"/>'
+    + '<circle cx="9.8" cy="12.6" r="1.05" fill="#5865f2"/><circle cx="14.2" cy="12.6" r="1.05" fill="#5865f2"/></svg>',
+  'com.microsoft.teams': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6.4" fill="#6264a7"/>'
+    + '<rect x="4.6" y="8.6" width="9.2" height="8.2" rx="1.6" fill="#fff"/>'
+    + '<path d="M6.4 10.6h5.6M9.2 10.6v4.6" stroke="#6264a7" stroke-width="1.5" stroke-linecap="round"/>'
+    + '<circle cx="16.8" cy="9.1" r="2" fill="#fff"/><path d="M14.9 12.1h3.8c.5 0 .9.4.9.9v2.1a2.9 2.9 0 0 1-2.9 2.9h-.5a2.9 2.9 0 0 1-2.9-2.9v-1.9c0-.6.5-1.1 1.1-1.1z" fill="#fff"/></svg>',
+};
+
+/** The badge for a row: the app's mark by package, or a coloured initial for anything else. */
+function mirrorBadge(n) {
+  const icon = MIRROR_ICONS[n.package];
+  if (icon) {
+    const el = h('span', 'mirror-icon');
+    el.innerHTML = icon;
+    return el;
+  }
+  const dot = h('span', 'mirror-dot', (n.app || '?').slice(0, 1));
+  dot.style.setProperty('--d', MIRROR_APPS[n.app] || '#64748b');
+  return dot;
+}
+
+/**
  * Notifications mirrored from the personal phone. The agent keeps only what the phone reports as active, so
  * a row disappears when the phone withdraws the notification and an update replaces its row instead of adding one.
  */
@@ -1320,15 +1356,14 @@ W.mirror = {
           list.replaceChildren(h('div', 'mirror-empty', en('No active notifications')));
           return;
         }
-        list.replaceChildren(...items.slice(0, 10).map((n) => {
-          const dot = h('span', 'mirror-dot', (n.app || '?').slice(0, 1));
-          dot.style.setProperty('--d', MIRROR_APPS[n.app] || '#64748b');
-          return h('div', 'mirror-row',
-            dot,
-            h('div', 'mirror-body',
-              h('div', 'mirror-top', h('b', null, n.sender || n.app), h('span', 'mirror-app', null, n.app), h('span', 'mirror-time', null, n.at ? ago(n.at) : '')),
-              n.text ? h('div', 'mirror-text', null, n.text) : null));
-        }));
+        list.replaceChildren(...items.slice(0, 10).map((n) => h('div', 'mirror-row',
+          mirrorBadge(n),
+          h('div', 'mirror-body',
+            h('div', 'mirror-top',
+              h('b', 'mirror-sender', null, n.sender || n.app),
+              h('span', 'mirror-app', null, n.app),
+              h('span', 'mirror-time', null, n.at ? ago(n.at) : '')),
+            n.text ? h('div', 'mirror-text', null, n.text) : null))));
       },
     };
   },

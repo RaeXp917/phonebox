@@ -1,16 +1,19 @@
-// The phone-notification widget: it shows what the agent mirrored from the personal phone, one row per
-// active notification, and it must not invent rows when the feed is empty.
+// The phone-notification widget: one row per active notification, the app's own mark on the left, the sender
+// as the title, the app as a secondary label, the preview beneath and the age on the right.
 const { test, expect } = require('@playwright/test');
 
+const now = Date.now();
 const ITEMS = [
-  { id: '0|com.facebook.orca|1|null|1', app: 'Messenger', package: 'com.facebook.orca', sender: 'Alice', text: 'See you at eight', at: Date.now() - 120_000 },
-  { id: '0|com.discord|2|null|1', app: 'Discord', package: 'com.discord', sender: 'Bob', text: 'ping', at: Date.now() - 30_000 },
+  { id: 'a', app: 'Messenger', package: 'com.facebook.orca', sender: 'Alice', text: 'See you at eight', at: now - 120_000 },
+  { id: 'b', app: 'Discord', package: 'com.discord', sender: 'Bob', text: 'ping', at: now - 30_000 },
+  { id: 'c', app: 'Teams', package: 'com.microsoft.teams', sender: 'Work chat', text: 'Standup in 5', at: now - 10_000 },
+  { id: 'd', app: 'Instagram', package: 'com.instagram.android', sender: 'dana', text: 'liked your photo', at: now - 5_000 },
 ];
-
-// The agent hands the panel the text exactly as the phone has it: no "String (...)" wrapper, and Greek or
-// emoji untouched. The wrapper is unwrapped by the agent, so what arrives here is already clean.
+const UNKNOWN = [
+  { id: 'x', app: 'Test', package: 'com.example.unknown', sender: 'Someone', text: 'hello', at: now - 1_000 },
+];
 const UNICODE = [
-  { id: '0|com.instagram.android|3|null|1', app: 'Instagram', package: 'com.instagram.android', sender: 'Καλημέρα σου', text: 'Ça va très bien 👨‍👩‍👧‍👦', at: Date.now() - 10_000 },
+  { id: 'u', app: 'Instagram', package: 'com.instagram.android', sender: 'Καλημέρα σου', text: 'Ça va très bien 👨‍👩‍👧‍👦', at: now - 10_000 },
 ];
 
 async function open(page, items) {
@@ -25,19 +28,43 @@ async function open(page, items) {
   await expect(page.locator('[data-id="mirror-test"] .w-mirror')).toHaveCount(1);
 }
 
-test('each active notification is one row with app, sender, preview and age', async ({ page }) => {
+test('each of the four apps gets its own bundled mark, by package', async ({ page }) => {
   await open(page, ITEMS);
   const rows = page.locator('.w-mirror .mirror-row');
-  await expect(rows).toHaveCount(2);
-  const first = rows.first();
-  await expect(first.locator('.mirror-top b')).toHaveText('Alice');
-  await expect(first.locator('.mirror-app')).toHaveText('Messenger');
-  await expect(first.locator('.mirror-text')).toHaveText('See you at eight');
-  await expect(first.locator('.mirror-time')).not.toHaveText('');
-  // the badge takes the app's initial and its brand colour
-  await expect(first.locator('.mirror-dot')).toHaveText('M');
-  const dotColor = await first.locator('.mirror-dot').evaluate((el) => getComputedStyle(el).getPropertyValue('--d').trim());
-  expect(dotColor).toBe('#0084ff');
+  await expect(rows).toHaveCount(4);
+
+  // one SVG badge per row, and the brand colour comes from the package, not from the sender text
+  const colours = [];
+  for (let i = 0; i < 4; i++) {
+    const svg = rows.nth(i).locator('.mirror-icon svg');
+    await expect(svg).toHaveCount(1);
+    colours.push(await svg.locator('rect').first().getAttribute('fill'));
+  }
+  expect(colours).toEqual(['#0084ff', '#5865f2', '#6264a7', 'url(#ig)']);
+});
+
+test('an unknown package falls back to an initial, never to a brand mark', async ({ page }) => {
+  await open(page, UNKNOWN);
+  const row = page.locator('.w-mirror .mirror-row').first();
+  await expect(row.locator('.mirror-icon')).toHaveCount(0);
+  await expect(row.locator('.mirror-dot')).toHaveText('T');
+});
+
+test('the sender is the title, the app is secondary, the preview sits beneath, the age on the right', async ({ page }) => {
+  await open(page, ITEMS);
+  const row = page.locator('.w-mirror .mirror-row').first();
+  await expect(row.locator('.mirror-sender')).toHaveText('Alice');
+  await expect(row.locator('.mirror-app')).toHaveText('Messenger');
+  await expect(row.locator('.mirror-text')).toHaveText('See you at eight');
+  await expect(row.locator('.mirror-time')).not.toHaveText('');
+
+  const [sender, app, text, time] = await Promise.all([
+    row.locator('.mirror-sender').boundingBox(), row.locator('.mirror-app').boundingBox(),
+    row.locator('.mirror-text').boundingBox(), row.locator('.mirror-time').boundingBox(),
+  ]);
+  expect(sender.y).toBeLessThan(text.y);          // preview beneath the title
+  expect(time.x).toBeGreaterThan(app.x);          // age stays on the right
+  expect(text.x).toBeCloseTo(sender.x, 0);        // preview aligns with the title, not the icon
 });
 
 test('an empty feed says so instead of showing a blank card', async ({ page }) => {
@@ -49,9 +76,8 @@ test('an empty feed says so instead of showing a blank card', async ({ page }) =
 test('Greek, accents and a multi-codepoint emoji render exactly as sent', async ({ page }) => {
   await open(page, UNICODE);
   const row = page.locator('.w-mirror .mirror-row').first();
-  await expect(row.locator('.mirror-top b')).toHaveText('Καλημέρα σου');
+  await expect(row.locator('.mirror-sender')).toHaveText('Καλημέρα σου');
   await expect(row.locator('.mirror-text')).toHaveText('Ça va très bien 👨‍👩‍👧‍👦');
-  // no wrapper and no replacement characters survived
   const text = await row.locator('.mirror-text').textContent();
   expect(text.startsWith('String (')).toBe(false);
   expect(text.includes('\uFFFD')).toBe(false);
