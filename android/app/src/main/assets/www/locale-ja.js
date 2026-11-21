@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "ja": {
     "strings": {
+      "w.mirrorEmpty": "表示する内容がありません",
+      "w.mirrorDisconnected": "スマートフォンが切断されています",
+      "w.mirrorLoading": "通知を読み込み中…",
+      "w.mirrorUnavailable": "通知を利用できません",
+      "w.mirrorLastSynced": "最終同期",
+      "w.mirrorNotConnected": "未接続",
       "s.feeds.import": "+ フィードをインポート（OPML / 一括）",
       "s.feeds.importTitle": "RSS / Atom フィードのインポート",
       "s.feeds.importHint": "OPML エクスポートファイル（Feedly、Inoreader、NetNewsWire など）からカテゴリ付きのフィードをインポートするか、行を貼り付けます（カテゴリ | 名前 | URL、または 名前 | URL）。",
@@ -881,6 +887,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "期限は {time} です。"
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Messenger、Discord、Teams、Instagram の通知を、有効な間だけスマートフォンからミラー表示します。",
       "Only this category (its category in Settings; empty = all)": "このカテゴリのみ（設定でのカテゴリ。空欄 = すべて）",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / カーソル / OpenCode / Antigravity セッション: 作業中、待機中、無効",
       "1": "1",

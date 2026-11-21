@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "ar": {
     "strings": {
+      "w.mirrorEmpty": "لا يوجد ما يُعرض",
+      "w.mirrorDisconnected": "الهاتف غير متصل",
+      "w.mirrorLoading": "جارٍ تحميل الإشعارات…",
+      "w.mirrorUnavailable": "الإشعارات غير متاحة",
+      "w.mirrorLastSynced": "آخر مزامنة",
+      "w.mirrorNotConnected": "غير متصل",
       "s.feeds.import": "+ استيراد الخلاصات (OPML / دفعة واحدة)",
       "s.feeds.importTitle": "استيراد خلاصات RSS / Atom",
       "s.feeds.importHint": "استورد خلاصات مصنفة من ملف تصدير OPML (Feedly وInoreader وNetNewsWire وغيرها) أو الصق أسطرًا (الفئة | الاسم | URL، أو الاسم | URL).",
@@ -881,6 +887,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "تنتهي صلاحيتها في {time}"
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "إشعارات Messenger وDiscord وTeams وInstagram، منسوخة من هاتفك ما دامت نشطة.",
       "Only this category (its category in Settings; empty = all)": "هذه الفئة فقط (فئتها في الإعدادات؛ فارغ = الكل)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "جلسات Claude Code / Codex / Cursor / OpenCode / Antigravity: عاملة، منتظرة، غير نشطة.",
       "1": "1",

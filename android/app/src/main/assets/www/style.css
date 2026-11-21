@@ -710,7 +710,7 @@ html.beat-3 .sess.busy .st, html.beat-4 .sess.shell .st, html.beat-2 .sess.waiti
 .mirror-app { font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); flex: none; }
 .mirror-time { margin-left: auto; font-size: 10px; color: var(--dim); flex: none; }
 .mirror-text { font-size: 11.5px; color: var(--text); opacity: .82; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mirror-empty { color: var(--muted); font-size: 12px; padding-top: 4px; }
+.mirror-empty { flex: 1; display: grid; place-items: center; color: var(--muted); font-size: 13px; text-align: center; padding: 4px 0; }
 .w-inbox { padding: 9px 12px; display: flex; flex-direction: column; }
 .ib-i { padding: 5px 9px; border-radius: 9px; background: rgba(255, 255, 255, .035); border-left: 3px solid var(--lc); }
 .ib-h { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }

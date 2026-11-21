@@ -505,7 +505,18 @@ app.MapGet("/api/push", (PushStore push) => Results.Json(new { version = push.Ve
 app.MapGet("/api/mirror", (MirrorFeed mirror) => Results.Json(new
 {
     version = mirror.Version, items = mirror.Snapshot(), stale = mirror.Stale, syncedAt = mirror.SyncedAt,
-}));app.MapGet("/api/push/{key}", (string key, PushStore push) => push.Get(key) is { } item ? Results.Json(item) : Results.NotFound());
+}));
+// The phone's own notification listener pushes its active list here over the paired link, so the source phone needs
+// no cable (NotificationRelay in the app). Counts only in the log: a notification's text must never be written out.
+app.MapPost("/api/mirror/push", async (HttpRequest req, MirrorFeed mirror, ILogger<Program> log) =>
+{
+    var (items, error) = await MirrorPush.ReadBody(req);
+    if (error is not null) return Results.BadRequest(new { error });
+    var device = req.Headers["X-PhoneBox-Device"].ToString();
+    var changed = mirror.Pushed(items!, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), device);
+    if (changed) log.LogInformation("notification mirror: {Count} active pushed by the phone", items!.Count);
+    return Results.Json(new { ok = true, version = mirror.Version });
+});app.MapGet("/api/push/{key}", (string key, PushStore push) => push.Get(key) is { } item ? Results.Json(item) : Results.NotFound());
 app.MapMethods("/api/push/{key}", ["POST", "PUT"], async (string key, int? ttl, HttpRequest req, PushStore push) =>
 {
     var (data, error) = await PushStore.ReadBody(req);

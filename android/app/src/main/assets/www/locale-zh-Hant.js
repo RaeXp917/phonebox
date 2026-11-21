@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "zh-Hant": {
     "strings": {
+      "w.mirrorEmpty": "沒有可顯示的內容",
+      "w.mirrorDisconnected": "手機已中斷連線",
+      "w.mirrorLoading": "正在載入通知…",
+      "w.mirrorUnavailable": "通知無法使用",
+      "w.mirrorLastSynced": "上次同步",
+      "w.mirrorNotConnected": "未連線",
       "s.feeds.import": "+ 匯入訂閱來源（OPML / 批次）",
       "s.feeds.importTitle": "匯入 RSS / Atom 訂閱來源",
       "s.feeds.importHint": "從 OPML 匯出檔（Feedly、Inoreader、NetNewsWire 等）匯入帶分類的訂閱來源，或貼上文字行（分類 | 名稱 | URL，或 名稱 | URL）。",
@@ -881,6 +887,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "過期 {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "來自 Messenger、Discord、Teams 和 Instagram 的通知，在有效期間從你的手機鏡像顯示。",
       "Only this category (its category in Settings; empty = all)": "僅此分類（設定中的分類；留空 = 全部）",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex 光標 OpenCode / Antigravity 會話 ： 工作 ， 等待 ， 空閒 。",
       "1": "1",

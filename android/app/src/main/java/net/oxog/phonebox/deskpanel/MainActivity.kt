@@ -147,10 +147,60 @@ class MainActivity : Activity(), SensorEventListener {
         // Lets you debug the panel from the computer via chrome://inspect.
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
 
+        maybeAskForNotificationAccess { startPanel() }
+    }
+
+    private var panelStarted = false
+
+    /** The panel's first draw, after the one-time question that settles this phone's role. */
+    private fun startPanel() {
+        if (panelStarted) return
+        panelStarted = true
         web.loadUrl("https://$ASSET_HOST/assets/www/index.html")
         hideSystemUi()
         handlePairingLink(intent)
     }
+
+    /**
+     * The notification card reads this phone only through a notification listener (see [NotificationRelay]). Asked
+     * once, and the panel only starts loading afterwards: a phone that becomes a notification source must never be
+     * made a home app first (the panel's config asks for that on every device), so the answer settles the role
+     * before the first config is applied. A phone that only shows the panel answers "Not this phone".
+     */
+    private fun maybeAskForNotificationAccess(then: () -> Unit) {
+        val prefs = getSharedPreferences("relay", MODE_PRIVATE)
+        if (prefs.getBoolean("asked", false) || NotificationRelay.allowed(this)) {
+            then()
+            return
+        }
+        prefs.edit().putBoolean("asked", true).apply()
+        AlertDialog.Builder(this)
+            .setCancelable(false)
+            .setTitle(R.string.relay_title)
+            .setMessage(R.string.relay_message)
+            .setPositiveButton(R.string.relay_allow) { _, _ ->
+                prefs.edit().putBoolean("sender", true).apply()
+                try {
+                    startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                } catch (_: Exception) {
+                    startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
+                }
+                then()
+            }
+            .setNegativeButton(R.string.relay_not_this_phone) { _, _ ->
+                prefs.edit().putBoolean("sender", false).apply()
+                then()
+            }
+            .show()
+    }
+
+    /**
+     * True when this phone is being used as a notification source. Such a phone must not take over the launcher or
+     * pin itself: the desk panel is the other device. It never undoes a home alias the owner already has, so a wrong
+     * answer cannot break a panel that is already set up.
+     */
+    private fun isNotificationSource(): Boolean =
+        getSharedPreferences("relay", MODE_PRIVATE).getBoolean("sender", false) || NotificationRelay.allowed(this)
 
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -530,6 +580,8 @@ class MainActivity : Activity(), SensorEventListener {
         @JavascriptInterface
         fun setPinned(key: String, on: Boolean) {
             if (!ok(key)) return
+            // a phone that mirrors its notifications is not the desk panel: it must not pin itself
+            if (on && isNotificationSource()) return
             runOnUiThread {
                 val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
                 val pinned = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) am.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
@@ -620,6 +672,9 @@ class MainActivity : Activity(), SensorEventListener {
         @JavascriptInterface
         fun setHomeScreen(key: String, on: Boolean) {
             if (!ok(key)) return
+            // The config asks every device for this. A phone that mirrors its notifications must not become a home
+            // app; an alias the owner already has is left alone, so a wrong answer cannot break a working panel.
+            if (on && isNotificationSource()) return
             val alias = ComponentName(this@MainActivity, "$packageName.HomeAlias")
             val want = if (on) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             if (packageManager.getComponentEnabledSetting(alias) != want)

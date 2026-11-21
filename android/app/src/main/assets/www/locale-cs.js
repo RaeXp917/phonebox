@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "cs": {
     "strings": {
+      "w.mirrorEmpty": "Nic k zobrazení",
+      "w.mirrorDisconnected": "Telefon odpojen",
+      "w.mirrorLoading": "Načítání oznámení…",
+      "w.mirrorUnavailable": "Oznámení nejsou k dispozici",
+      "w.mirrorLastSynced": "poslední synchronizace",
+      "w.mirrorNotConnected": "nepřipojeno",
       "s.feeds.import": "+ Importovat kanály (OPML / hromadně)",
       "s.feeds.importTitle": "Importovat kanály RSS / Atom",
       "s.feeds.importHint": "Importujte kanály s kategoriemi ze souboru exportu OPML (Feedly, Inoreader, NetNewsWire atd.) nebo vložte řádky (Kategorie | Název | URL, nebo Název | URL).",
@@ -881,6 +887,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expires in 10 dny {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Oznámení z Messengeru, Discordu, Teams a Instagramu, zrcadlená z vašeho telefonu, dokud jsou aktivní.",
       "Only this category (its category in Settings; empty = all)": "Jen tato kategorie (její kategorie v Nastavení; prázdné = všechny)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Relace Claude Code / Codex / Cursor / OpenCode / Antigravity: pracující, čekající, nečinný.",
       "1": "1",

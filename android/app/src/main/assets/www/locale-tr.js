@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "tr": {
     "strings": {
+      "w.mirrorEmpty": "Gösterilecek bir şey yok",
+      "w.mirrorDisconnected": "Telefon bağlı değil",
+      "w.mirrorLoading": "Bildirimler yükleniyor…",
+      "w.mirrorUnavailable": "Bildirimler kullanılamıyor",
+      "w.mirrorLastSynced": "son eşitleme",
+      "w.mirrorNotConnected": "bağlı değil",
       "s.feeds.import": "+ Beslemeleri içe aktar (OPML / toplu)",
       "s.feeds.importTitle": "RSS / Atom beslemelerini içe aktar",
       "s.feeds.importHint": "Bir OPML dışa aktarma dosyasından (Feedly, Inoreader, NetNewsWire vb.) kategorili beslemeleri içe aktarın ya da satır yapıştırın (Kategori | Ad | URL veya Ad | URL).",
@@ -408,6 +414,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "{time}'de sona erer."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Messenger, Discord, Teams ve Instagram bildirimleri, etkin oldukları sürece telefonunuzdan yansıtılır.",
       "Only this category (its category in Settings; empty = all)": "Yalnızca bu kategori (Ayarlar'daki kategorisi; boş = tümü)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / Cursor / OpenCode / Antigravity oturumları: çalışma, bekleme, boş.",
       "1": "1",

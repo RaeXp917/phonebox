@@ -123,6 +123,8 @@ export let pushVersion = null;
 export let mirrorVersion = null;
 /** True when the source phone is not reachable and the rows are the last snapshot (see MirrorFeed.MarkStale). */
 export let mirrorStale = false;
+/** True when the last /api/mirror request failed, so the card can say "unavailable" instead of a blank list. */
+export let mirrorError = false;
 /** When the phone was last read, for the "last synced" line. */
 export let mirrorSyncedAt = null;
 
@@ -2335,8 +2337,15 @@ export async function loadMirror() {
     mirrorVersion = r.version;
     mirrorStale = r.stale === true;
     mirrorSyncedAt = r.syncedAt ?? null;
+    mirrorError = false;
     emit('mirror');
-  } catch (_) {}
+  } catch (_) {
+    if (req < appliedMirrorRequest) return;
+    // A failed read cannot confirm what is on screen: keep the rows, but never present them as live.
+    mirrorError = !D.mirror.length;
+    if (D.mirror.length) mirrorStale = true;
+    emit('mirror');
+  }
 }
 
 export async function loadPush() {  const req = ++pushRequest;

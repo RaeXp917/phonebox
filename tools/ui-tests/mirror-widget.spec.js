@@ -25,7 +25,8 @@ async function open(page, items, extra = {}) {
     localStorage.setItem('pb-demo-mirror', JSON.stringify(data.items));
     localStorage.setItem('pb-demo-mirror-stale', JSON.stringify(data.stale === true));
     if (data.syncedAt != null) localStorage.setItem('pb-demo-mirror-synced', JSON.stringify(data.syncedAt));
-  }, { items, stale: extra.stale, syncedAt: extra.syncedAt });
+    for (const [k, v] of Object.entries(data.seed || {})) localStorage.setItem(k, JSON.stringify(v));
+  }, { items, stale: extra.stale, syncedAt: extra.syncedAt, seed: extra.seed });
   await page.goto('/panel/');
   await expect(page.locator('[data-id="mirror-test"] .w-mirror')).toHaveCount(1);
 }
@@ -69,10 +70,31 @@ test('the sender is the title, the app is secondary, the preview sits beneath, t
   expect(text.x).toBeCloseTo(sender.x, 0);        // preview aligns with the title, not the icon
 });
 
-test('an empty feed says so instead of showing a blank card', async ({ page }) => {
+test('the card is named Notifications and always draws its own title', async ({ page }) => {
+  await open(page, []);
+  await expect(page.locator('.w-mirror .w-title')).toContainText('Notifications');
+});
+
+test('a connected phone with nothing to show says so instead of drawing a blank card', async ({ page }) => {
   await open(page, []);
   await expect(page.locator('.w-mirror .mirror-row')).toHaveCount(0);
-  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('No active notifications');
+  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('Nothing to show');
+});
+
+test('a phone that was never reached is disconnected, not "nothing to show"', async ({ page }) => {
+  await open(page, [], { stale: true });
+  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('Phone disconnected');
+  await expect(page.locator('.w-mirror .mirror-empty')).not.toHaveText('Nothing to show');
+});
+
+test('while the first answer is still on its way the card says it is loading', async ({ page }) => {
+  await open(page, [], { seed: { 'pb-demo-mirror-delay': 60_000 } });
+  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('Loading notifications…');
+});
+
+test('an agent that cannot answer says the list is unavailable, not empty', async ({ page }) => {
+  await open(page, [], { seed: { 'pb-demo-mirror-fail': true } });
+  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('Notifications unavailable');
 });
 
 test('a disconnected phone keeps the last rows and marks them as old', async ({ page }) => {
@@ -81,9 +103,9 @@ test('a disconnected phone keeps the last rows and marks them as old', async ({ 
   await expect(page.locator('.w-mirror .w-sub')).toHaveText(/last synced/);
 });
 
-test('an empty feed from a disconnected phone says so', async ({ page }) => {
+test('an empty feed from a disconnected phone says the phone is away', async ({ page }) => {
   await open(page, [], { stale: true, syncedAt: Date.now() - 60_000 });
-  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('No notifications (phone not connected)');
+  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('Phone disconnected');
 });
 
 test('Greek, accents and a multi-codepoint emoji render exactly as sent', async ({ page }) => {

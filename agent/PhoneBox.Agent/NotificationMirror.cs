@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace PhoneBox.Agent;
@@ -18,13 +19,27 @@ public sealed class MirrorFeed
     private long _version;
     private long? _syncedAt;
     private bool _stale;
+    private string? _source;
+    private long _pushedAtTick;
 
     public long Version { get { lock (_lock) return _version; } }
 
     /// <summary>When the phone was last read successfully, or null if it never was.</summary>
     public long? SyncedAt { get { lock (_lock) return _syncedAt; } }
 
-    /// <summary>True when the phone is not reachable right now and the rows are the last snapshot.</summary>
+    /// <summary>When a snapshot pushed by the phone's own listener last arrived (Environment.TickCount64); 0 = never.</summary>
+    public long PushedAtTick { get { lock (_lock) return _pushedAtTick; } }
+
+    /// <summary>
+    /// The phone that pushed last, by its own device id (see <see cref="AgentLink"/>'s device header). Kept so a
+    /// second phone with notification access cannot erase the rows the real source pushed.
+    /// </summary>
+    public string? Source { get { lock (_lock) return _source; } }
+
+    /// <summary>
+    /// True when the phone is not reachable right now. The rows, if any, are the last snapshot; with no rows it
+    /// means "never read it", which the panel must not show as "connected, nothing to show".
+    /// </summary>
     public bool Stale { get { lock (_lock) return _stale; } }
 
     public IReadOnlyList<MirroredNotification> Snapshot()
@@ -56,21 +71,45 @@ public sealed class MirrorFeed
 
     /// <summary>
     /// The phone is not there right now. Keep what was on screen and say it is old instead of emptying the
-    /// card: a cable pulled for a minute must not look like "no notifications".
+    /// card: a cable pulled for a minute must not look like "no notifications". An empty feed is marked too,
+    /// so a panel that never reached the phone does not claim it has nothing to show.
     /// </summary>
     public void MarkStale()
     {
         lock (_lock)
         {
-            if (_stale || _items.Count == 0) return;
+            if (_stale) return;
             _stale = true;
             _version++;
         }
     }
 
+    /// <summary>
+    /// A snapshot pushed by the phone's own notification listener over Wi-Fi (see <see cref="MirrorPush"/>), so the
+    /// source phone needs no cable. An empty list from a phone that has never shown anything is ignored: a second
+    /// phone with notification access must not erase the rows the real source pushed.
+    /// </summary>
+    /// <returns>True when the panel has something new to draw.</returns>
+    public bool Pushed(IReadOnlyList<MirroredNotification> items, long at, string? device)
+    {
+        lock (_lock)
+        {
+            if (items.Count == 0 && _source is { } source && device is { Length: > 0 } id && source != id) return false;
+            if (device is { Length: > 0 }) _source = device;
+            _pushedAtTick = Environment.TickCount64;
+            return ReplaceAll(items, at);
+        }
+    }
+
     public void Clear()
     {
-        lock (_lock) { if (_items.Count == 0 && !_stale) return; _items.Clear(); _stale = false; _version++; }
+        lock (_lock)
+        {
+            _source = null;
+            _pushedAtTick = 0;
+            if (_items.Count == 0 && !_stale) return;
+            _items.Clear(); _stale = false; _version++;
+        }
     }
 }
 
@@ -88,8 +127,8 @@ public static partial class NotificationDump
 
     /// <summary>A summary is a container for its children, not a message; mirroring it would duplicate every row.</summary>
     private const int FlagGroupSummary = 0x200;
-    private const int MaxSender = 80;
-    private const int MaxText = 200;
+    internal const int MaxSender = 80;
+    internal const int MaxText = 200;
 
     public static IReadOnlyList<MirroredNotification> Parse(string dump)
     {
@@ -172,7 +211,7 @@ public static partial class NotificationDump
     private static partial Regex CharSequenceDump();
 
     /// <summary>One line, trimmed, and short enough for a panel row.</summary>
-    private static string Clean(string value, int max)
+    internal static string Clean(string value, int max)
     {
         var s = Whitespace().Replace(value, " ").Trim();
         return s.Length <= max ? s : s[..(max - 1)] + "…";
@@ -194,6 +233,9 @@ public static partial class NotificationDump
 public sealed class NotificationMirror(ConfigStore cfg, AdbReverse adb, MirrorFeed feed, ILogger<NotificationMirror> log)
     : BackgroundService
 {
+    /// <summary>The listener on the phone sends a heartbeat, so a silence this long means the phone is really gone.</summary>
+    private const long PushFreshMs = 75_000;
+
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         string? usedSerial = null;
@@ -206,6 +248,16 @@ public sealed class NotificationMirror(ConfigStore cfg, AdbReverse adb, MirrorFe
             {
                 feed.Clear();
                 await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                continue;
+            }
+
+            // The phone's own listener pushes over Wi-Fi (no cable needed); while those pushes are fresh,
+            // adb has nothing to add and must not mark the feed stale behind its back.
+            var pushed = feed.PushedAtTick;
+            if (pushed != 0 && Environment.TickCount64 - pushed < PushFreshMs)
+            {
+                usedSerial = null;
+                await Task.Delay(TimeSpan.FromSeconds(2), ct);
                 continue;
             }
 
@@ -253,4 +305,72 @@ public sealed class NotificationMirror(ConfigStore cfg, AdbReverse adb, MirrorFe
         var panel = cfg.Get().DeviceSerial;
         return adb.AllDevices.FirstOrDefault(d => !string.Equals(d, panel, StringComparison.Ordinal));
     }
+}
+
+/// <summary>
+/// Reads the snapshot pushed by the phone's own notification listener over the paired link (NotificationRelay in
+/// the app), so the mirrored apps need no cable. The phone may name the app; the package id is what is trusted, and
+/// the display name comes from it.
+/// </summary>
+public static class MirrorPush
+{
+    private const int MaxBytes = 64 * 1024;
+    private const int MaxId = 200;
+    /// <summary>A phone with many active notifications still gets through: the feed keeps the newest 40.</summary>
+    private const int MaxItemsInBody = 200;
+
+    /// <summary>`{"items":[{id,package,sender,text,at}]}`; a record without a title or a body is skipped.</summary>
+    public static (IReadOnlyList<MirroredNotification>? Items, string? Error) Parse(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return ([], null);
+        JsonDocument doc;
+        try { doc = JsonDocument.Parse(body); }
+        catch (JsonException ex) { return (null, "invalid JSON: " + ex.Message); }
+        using (doc)
+        {
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("items", out var arr) || arr.ValueKind != JsonValueKind.Array)
+                return (null, "expected {\"items\": [ ... ]}");
+            if (arr.GetArrayLength() > MaxItemsInBody) return (null, $"more than {MaxItemsInBody} items");
+            var list = new List<MirroredNotification>();
+            foreach (var e in arr.EnumerateArray())
+            {
+                if (e.ValueKind != JsonValueKind.Object) continue;
+                var package = Str(e, "package");
+                if (package is null || !NotificationDump.Allowed.TryGetValue(package, out var app)) continue;
+                var id = NotificationDump.Clean(Str(e, "id") ?? "", MaxId);
+                if (id.Length == 0) continue;
+                var sender = NotificationDump.Clean(Str(e, "sender") ?? "", NotificationDump.MaxSender);
+                var text = NotificationDump.Clean(Str(e, "text") ?? "", NotificationDump.MaxText);
+                if (sender.Length == 0 && text.Length == 0) continue;
+                var at = e.TryGetProperty("at", out var a) && a.ValueKind == JsonValueKind.Number && a.TryGetInt64(out var ms) && ms > 0
+                    ? ms
+                    : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                list.Add(new MirroredNotification(id, app, package, sender, text, at));
+            }
+            return (list, null);
+        }
+    }
+
+    /// <summary>Reads a request body with a hard size cap: Content-Length can be absent on a chunked request.</summary>
+    public static async Task<(IReadOnlyList<MirroredNotification>? Items, string? Error)> ReadBody(HttpRequest req)
+    {
+        if (req.ContentLength > MaxBytes) return (null, TooLarge());
+        var buf = new byte[MaxBytes + 1];
+        var n = 0;
+        while (n < buf.Length)
+        {
+            var count = await req.Body.ReadAsync(buf.AsMemory(n), req.HttpContext.RequestAborted);
+            if (count == 0) break;
+            n += count;
+        }
+        if (n > MaxBytes) return (null, TooLarge());
+        return Parse(System.Text.Encoding.UTF8.GetString(buf, 0, n));
+    }
+
+    private static string TooLarge() => $"body too large (max {MaxBytes / 1024} KB)";
+
+    private static string? Str(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 }

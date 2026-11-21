@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "hi": {
     "strings": {
+      "w.mirrorEmpty": "दिखाने के लिए कुछ नहीं",
+      "w.mirrorDisconnected": "फ़ोन कनेक्ट नहीं है",
+      "w.mirrorLoading": "सूचनाएँ लोड हो रही हैं…",
+      "w.mirrorUnavailable": "सूचनाएँ उपलब्ध नहीं हैं",
+      "w.mirrorLastSynced": "अंतिम सिंक",
+      "w.mirrorNotConnected": "कनेक्ट नहीं है",
       "s.feeds.import": "+ फ़ीड आयात करें (OPML / एक साथ)",
       "s.feeds.importTitle": "RSS / Atom फ़ीड आयात करें",
       "s.feeds.importHint": "OPML एक्सपोर्ट फ़ाइल (Feedly, Inoreader, NetNewsWire आदि) से श्रेणियों वाली फ़ीड आयात करें या पंक्तियाँ चिपकाएँ (श्रेणी | नाम | URL, या नाम | URL)।",
@@ -881,6 +887,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "में ख़त्म होता है {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Messenger, Discord, Teams और Instagram की सूचनाएँ, सक्रिय रहने तक आपके फ़ोन से मिरर की जाती हैं।",
       "Only this category (its category in Settings; empty = all)": "केवल यह श्रेणी (सेटिंग्स में इसकी श्रेणी; खाली = सभी)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / कर्सर / OpenCode / Antigravity सत्र: कार्यरत, प्रतीक्षारत, निष्क्रिय.",
       "1": "1",

@@ -214,14 +214,26 @@ public class NotificationMirrorTests
         Assert.Equal("b", Assert.Single(feed.Snapshot()).Id);
     }
 
+    // An empty feed that was never read must not look like "the phone is connected and has nothing to show":
+    // the panel tells the two apart with this flag, so marking an empty feed stale bumps once.
     [Fact]
-    public void MarkingAnEmptyFeedStaleDoesNothing()
+    public void MarkingAnEmptyFeedStaleMarksItAndBumpsOnce()
     {
         var feed = new MirrorFeed();
         feed.MarkStale();
-        Assert.False(feed.Stale);
-        Assert.Equal(0, feed.Version);
+        Assert.True(feed.Stale);
+        Assert.Equal(1, feed.Version);
         Assert.Null(feed.SyncedAt);
+
+        feed.MarkStale();                       // already marked: no extra redraw
+        Assert.Equal(1, feed.Version);
+
+        // a first successful read that finds nothing clears the flag, which is a visible change
+        Assert.True(feed.ReplaceAll([], 300));
+        Assert.False(feed.Stale);
+        Assert.Equal(2, feed.Version);
+        Assert.Empty(feed.Snapshot());
+        Assert.Equal(300, feed.SyncedAt);
     }
 
     // Coming back from stale is a visible change even when the phone's list is identical.
@@ -246,5 +258,94 @@ public class NotificationMirrorTests
         feed.Clear();
         Assert.Empty(feed.Snapshot());
         Assert.False(feed.Stale);
+    }
+
+    // ---------------------------------------------------------------- what the phone's own listener pushes
+
+    [Fact]
+    public void APushedSnapshotIsReadAndTheAppNameComesFromThePackage()
+    {
+        var (items, error) = MirrorPush.Parse("""
+            {"items":[
+              {"id":"0|com.instagram.android|1|null|10123","app":"Whatever","package":"com.instagram.android","sender":"Alice","text":"See you at eight","at":1700000000000},
+              {"id":"k2","app":"Instagram","package":"com.example.other","sender":"x","text":"y","at":1},
+              {"id":"k3","app":"Discord","package":"com.discord","sender":"","text":"","at":1}
+            ]}
+            """);
+        Assert.Null(error);
+        var one = Assert.Single(items!);
+        Assert.Equal("Instagram", one.App);              // from the package, never from the phone's word
+        Assert.Equal("Alice", one.Sender);
+        Assert.Equal(1700000000000, one.At);
+    }
+
+    [Fact]
+    public void APushedRecordWithoutTextIsSkippedAndBadJsonIsRefused()
+    {
+        var (none, _) = MirrorPush.Parse("""{"items":[{"id":"a","package":"com.discord","sender":"","text":"","at":1}]}""");
+        Assert.Empty(none!);
+
+        var (_, broken) = MirrorPush.Parse("{nope");
+        Assert.NotNull(broken);
+
+        var (_, shape) = MirrorPush.Parse("[1,2]");
+        Assert.NotNull(shape);
+    }
+
+    [Fact]
+    public void APushMarksTheFeedFreshAndTheSourcePhoneCannotBeClearedByAnother()
+    {
+        var feed = new MirrorFeed();
+        Assert.True(feed.Pushed([Item("a", "one", 10)], 100, "phone-a"));
+        Assert.NotEqual(0, feed.PushedAtTick);
+        Assert.Equal("phone-a", feed.Source);
+
+        // a second phone with notification access has nothing to show; that must not erase the rows
+        Assert.False(feed.Pushed([], 200, "phone-b"));
+        Assert.Single(feed.Snapshot());
+
+        // the source itself going empty is authoritative
+        Assert.True(feed.Pushed([], 300, "phone-a"));
+        Assert.Empty(feed.Snapshot());
+    }
+
+    [Fact]
+    public void AHeartbeatPushDoesNotBumpTheVersion()
+    {
+        var feed = new MirrorFeed();
+        feed.Pushed([Item("a", "one", 10)], 100, "phone");
+        var version = feed.Version;
+
+        Assert.False(feed.Pushed([Item("a", "one", 10)], 200, "phone"));
+        Assert.Equal(version, feed.Version);
+        Assert.NotEqual(0, feed.PushedAtTick);
+    }
+
+    [Fact]
+    public void ClearingResetsThePushSource()
+    {
+        var feed = new MirrorFeed();
+        feed.Pushed([Item("a", "one", 10)], 100, "phone");
+        feed.Clear();
+        Assert.Null(feed.Source);
+        Assert.Equal(0, feed.PushedAtTick);
+    }
+
+    // A busy phone can have more active notifications than the card shows: that is not an error, the newest win.
+    [Fact]
+    public void ManyActiveNotificationsAreKeptAndCappedNotRefused()
+    {
+        var records = Enumerable.Range(0, 60).Select(i =>
+            "{\"id\":\"k" + i + "\",\"package\":\"com.discord\",\"sender\":\"A\",\"text\":\"" + i + "\",\"at\":" + (1000 + i) + "}");
+        var (items, error) = MirrorPush.Parse("{\"items\":[" + string.Join(",", records) + "]}");
+
+        Assert.Null(error);
+        Assert.Equal(60, items!.Count);
+
+        var feed = new MirrorFeed();
+        feed.Pushed(items, 5000, "phone");
+        var kept = feed.Snapshot();
+        Assert.Equal(MirrorFeed.MaxItems, kept.Count);
+        Assert.Equal("k59", kept[0].Id);
     }
 }

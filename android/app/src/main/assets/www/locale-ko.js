@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "ko": {
     "strings": {
+      "w.mirrorEmpty": "표시할 내용이 없습니다",
+      "w.mirrorDisconnected": "휴대폰 연결이 끊겼습니다",
+      "w.mirrorLoading": "알림 불러오는 중…",
+      "w.mirrorUnavailable": "알림을 사용할 수 없음",
+      "w.mirrorLastSynced": "마지막 동기화",
+      "w.mirrorNotConnected": "연결되지 않음",
       "s.feeds.import": "+ 피드 가져오기 (OPML / 일괄)",
       "s.feeds.importTitle": "RSS / Atom 피드 가져오기",
       "s.feeds.importHint": "OPML 내보내기 파일(Feedly, Inoreader, NetNewsWire 등)에서 분류가 있는 피드를 가져오거나 줄을 붙여 넣으세요(분류 | 이름 | URL 또는 이름 | URL).",
@@ -881,6 +887,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "만료일 {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Messenger, Discord, Teams, Instagram 알림을 활성 상태인 동안 휴대폰에서 그대로 표시합니다.",
       "Only this category (its category in Settings; empty = all)": "이 분류만 (설정의 분류, 비우면 전체)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / Cursor / OpenCode / Antigravity 세션: 작업, 대기, 유휴.",
       "1": "1",

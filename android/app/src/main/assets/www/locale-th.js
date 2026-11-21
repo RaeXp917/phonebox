@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "th": {
     "strings": {
+      "w.mirrorEmpty": "ไม่มีอะไรจะแสดง",
+      "w.mirrorDisconnected": "โทรศัพท์ไม่ได้เชื่อมต่อ",
+      "w.mirrorLoading": "กำลังโหลดการแจ้งเตือน…",
+      "w.mirrorUnavailable": "การแจ้งเตือนไม่พร้อมใช้งาน",
+      "w.mirrorLastSynced": "ซิงค์ล่าสุด",
+      "w.mirrorNotConnected": "ไม่ได้เชื่อมต่อ",
       "s.feeds.import": "+ นำเข้าฟีด (OPML / ทีละหลายรายการ)",
       "s.feeds.importTitle": "นำเข้าฟีด RSS / Atom",
       "s.feeds.importHint": "นำเข้าฟีดพร้อมหมวดหมู่จากไฟล์ส่งออก OPML (Feedly, Inoreader, NetNewsWire ฯลฯ) หรือวางบรรทัดข้อความ (หมวดหมู่ | ชื่อ | URL หรือ ชื่อ | URL)",
@@ -881,6 +887,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "หมดอายุใน {time}"
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "การแจ้งเตือนจาก Messenger, Discord, Teams และ Instagram ที่สะท้อนจากโทรศัพท์ของคุณขณะยังใช้งานอยู่",
       "Only this category (its category in Settings; empty = all)": "เฉพาะหมวดหมู่นี้ (หมวดหมู่ในการตั้งค่า; ว่าง = ทั้งหมด)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "วาระงาน Claude Code / Codex / เคลื่อนเคอร์เซอร์ / OpenCode / Antigravity: ทำงาน, คอย, ไม่มีกิจกรรม",
       "1": "1",

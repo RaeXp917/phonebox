@@ -41,6 +41,19 @@
             android:readPermission="android.permission.DUMP"
             android:writePermission="android.permission.DUMP" />
 
+        <!-- Reads this phone's own notifications for the mirrored apps and pushes them to the computer over the
+             paired link, so the source phone needs no cable. Granted in Android Settings > Notifications >
+             Notification access; Android binds it without the app having to be open. -->
+        <service
+            android:name=".NotificationRelay"
+            android:exported="false"
+            android:label="@string/relay_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"

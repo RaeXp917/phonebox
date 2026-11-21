@@ -1,4 +1,4 @@
-import { $, API, D, LEVEL_COLOR, LOCALE, mediaHtml, METRICS, PANEL_HEADERS, PREVIEW, Q_STYLE, S_ORDER, ago, api, averageColor, buildLayout, buzz, cfg, chime, cfgVersion, chart, color, cssVar, currentProcessesSort, emit, fillIcon, fmtClock, fmtDur, fmtHM, fmtMem, fmtReset, fmtTime, fmtValue, gotoProcesses, gpuMem, gpusOf, h, en, haptic, hasProcessesPage, hist, hour12, icon, keyButton, setKeyFace, labelled, levelOf, media, metricText, mirrorStale, mirrorSyncedAt, online, openSheet, paceInfo, pad, prRow, pushView, quotaProviders, r1, registerProcessesSorter, renderStatus, ringSvg, setArtColor, configMark, configReadSince, localWriteStored, setMediaState, setVolDragging, shortDur, shortGpu, store, t, tick, toast, volDragging, wxBlock, wxDeg, wxIcon, emo, rich, tp, tpv, quotaText } from '../main.js';
+import { $, API, D, LEVEL_COLOR, LOCALE, mediaHtml, METRICS, PANEL_HEADERS, PREVIEW, Q_STYLE, S_ORDER, ago, api, averageColor, buildLayout, buzz, cfg, chime, cfgVersion, chart, color, cssVar, currentProcessesSort, emit, fillIcon, fmtClock, fmtDur, fmtHM, fmtMem, fmtReset, fmtTime, fmtValue, gotoProcesses, gpuMem, gpusOf, h, en, haptic, hasProcessesPage, hist, hour12, icon, keyButton, setKeyFace, labelled, levelOf, media, metricText, mirrorError, mirrorStale, mirrorSyncedAt, mirrorVersion, online, openSheet, paceInfo, pad, prRow, pushView, quotaProviders, r1, registerProcessesSorter, renderStatus, ringSvg, setArtColor, configMark, configReadSince, localWriteStored, setMediaState, setVolDragging, shortDur, shortGpu, store, t, tick, toast, volDragging, wxBlock, wxDeg, wxIcon, emo, rich, tp, tpv, quotaText } from '../main.js';
 import { W } from '../registry.js';
 import { invalidateDeckState } from './controls.js';
 
@@ -1360,26 +1360,32 @@ function mirrorBadge(n) {
 /**
  * Notifications mirrored from the personal phone. The agent keeps only what the phone reports as active, so
  * a row disappears when the phone withdraws the notification and an update replaces its row instead of adding one.
+ * The card always draws something: an empty list, a phone that is away, a first load and an unreachable agent are
+ * four different states and none of them hides the widget.
  */
 W.mirror = {
   needs: ['mirror', 'tick'],
   create(box) {
     const list = h('div', 'mirror-list');
     const note = h('span', 'w-sub');
-    box.append(h('div', 'w-title', en('Phone notifications'), note), list);
+    box.append(h('div', 'w-title', en('Notifications'), note), list);
     let shown = '';
     return {
       update(kind) {
         // the source phone being away keeps the last snapshot on screen, clearly marked as old
-        if (mirrorStale) note.replaceChildren(...(mirrorSyncedAt ? [en('last synced'), ' ' + ago(mirrorSyncedAt)] : [en('not connected')]));
+        if (mirrorStale) note.replaceChildren(...(mirrorSyncedAt ? [t('w.mirrorLastSynced'), ' ' + ago(mirrorSyncedAt)] : [t('w.mirrorNotConnected')]));
         else note.replaceChildren();
         const items = D.mirror || [];
-        // re-render on a new set, and once a minute so the relative times stay honest
-        const key = items.map((n) => n.id + '#' + (n.at || 0) + '#' + (n.text || '').length).join('|') + '@' + Math.floor(Date.now() / 60000);
+        // re-render on a new set or a new state, and once a minute so the relative times stay honest
+        const flags = (mirrorStale ? 's' : '') + (mirrorError ? 'e' : '') + (mirrorVersion === null ? 'l' : '');
+        const key = flags + items.map((n) => n.id + '#' + (n.at || 0) + '#' + (n.text || '').length).join('|') + '@' + Math.floor(Date.now() / 60000);
         if (key === shown && kind === 'tick') return;
         shown = key;
         if (!items.length) {
-          list.replaceChildren(h('div', 'mirror-empty', mirrorStale ? en('No notifications (phone not connected)') : en('No active notifications')));
+          list.replaceChildren(h('div', 'mirror-empty', mirrorError ? t('w.mirrorUnavailable')
+            : mirrorVersion === null ? t('w.mirrorLoading')
+            : mirrorStale ? t('w.mirrorDisconnected')
+            : t('w.mirrorEmpty')));
           return;
         }
         list.replaceChildren(...items.slice(0, 10).map((n) => h('div', 'mirror-row',

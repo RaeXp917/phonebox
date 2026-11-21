@@ -2,6 +2,12 @@
 window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   "id": {
     "strings": {
+      "w.mirrorEmpty": "Tidak ada yang bisa ditampilkan",
+      "w.mirrorDisconnected": "Ponsel terputus",
+      "w.mirrorLoading": "Memuat notifikasi…",
+      "w.mirrorUnavailable": "Notifikasi tidak tersedia",
+      "w.mirrorLastSynced": "sinkron terakhir",
+      "w.mirrorNotConnected": "tidak terhubung",
       "s.feeds.import": "+ Impor feed (OPML / sekaligus)",
       "s.feeds.importTitle": "Impor feed RSS / Atom",
       "s.feeds.importHint": "Impor feed berkategori dari file ekspor OPML (Feedly, Inoreader, NetNewsWire, dll.) atau tempel baris teks (Kategori | Nama | URL, atau Nama | URL).",
@@ -881,6 +887,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Berakhir dalam {time} ."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notifikasi Messenger, Discord, Teams, dan Instagram, dicerminkan dari ponsel Anda selama masih aktif.",
       "Only this category (its category in Settings; empty = all)": "Hanya kategori ini (kategorinya di Pengaturan; kosong = semua)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / Cursor / OpenCode / Antigravity sesi: bekerja, menunggu, diam.",
       "1": "1",

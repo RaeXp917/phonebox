@@ -317,6 +317,13 @@
       'w.noSessionsToday': 'No sessions yet today',
       'w.setDateFormat': 'Set a date as YYYY-MM-DD HH:MM',
       'w.notifyEmpty': 'Nothing yet.\nSend one with POST /api/notify',
+      // The mirrored phone notifications card: it always draws one of these states
+      'w.mirrorEmpty': 'Nothing to show',
+      'w.mirrorDisconnected': 'Phone disconnected',
+      'w.mirrorLoading': 'Loading notifications…',
+      'w.mirrorUnavailable': 'Notifications unavailable',
+      'w.mirrorLastSynced': 'last synced',
+      'w.mirrorNotConnected': 'not connected',
       'w.noMedia': 'No media playing',
       'w.noEvents': 'No upcoming events',
 
@@ -3565,6 +3572,13 @@
     },
 
     'pt-BR': {
+      // The mirrored phone notifications card (fork): it always draws one of these states
+      'w.mirrorEmpty': 'Nada para mostrar',
+      'w.mirrorDisconnected': 'Telefone desconectado',
+      'w.mirrorLoading': 'Carregando notificações…',
+      'w.mirrorUnavailable': 'Notificações indisponíveis',
+      'w.mirrorLastSynced': 'última sincronização',
+      'w.mirrorNotConnected': 'desconectado',
       'lang.auto': 'Seguir sistema',
       'lang.label': 'Idioma',
       'panel.allPages': 'Todas as páginas',

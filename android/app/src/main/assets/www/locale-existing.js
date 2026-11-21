@@ -14,6 +14,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "de": {
     "strings": {
+      "w.mirrorEmpty": "Nichts anzuzeigen",
+      "w.mirrorDisconnected": "Telefon nicht verbunden",
+      "w.mirrorLoading": "Benachrichtigungen werden geladen…",
+      "w.mirrorUnavailable": "Benachrichtigungen nicht verfügbar",
+      "w.mirrorLastSynced": "zuletzt synchronisiert",
+      "w.mirrorNotConnected": "nicht verbunden",
       "s.feeds.import": "+ Feeds importieren (OPML / mehrere)",
       "s.feeds.importTitle": "RSS-/Atom-Feeds importieren",
       "s.feeds.importHint": "Feeds mit Kategorien aus einer OPML-Exportdatei (Feedly, Inoreader, NetNewsWire usw.) importieren oder Zeilen einfügen (Kategorie | Name | URL oder Name | URL).",
@@ -429,6 +435,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Abläuft in 1 Woche {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Benachrichtigungen von Messenger, Discord, Teams und Instagram, live von deinem eigenen Telefon gespiegelt, solange sie aktiv sind.",
       "Only this category (its category in Settings; empty = all)": "Nur diese Kategorie (ihre Kategorie in den Einstellungen; leer = alle)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / Cursor / OpenCode / Antigravity-Sitzungen: arbeiten, warten, im Leerlauf.",
       "1": "1",
@@ -1397,6 +1404,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "fr": {
     "strings": {
+      "w.mirrorEmpty": "Rien à afficher",
+      "w.mirrorDisconnected": "Téléphone déconnecté",
+      "w.mirrorLoading": "Chargement des notifications…",
+      "w.mirrorUnavailable": "Notifications indisponibles",
+      "w.mirrorLastSynced": "dernière synchro",
+      "w.mirrorNotConnected": "non connecté",
       "s.feeds.import": "+ Importer des flux (OPML / en masse)",
       "s.feeds.importTitle": "Importer des flux RSS / Atom",
       "s.feeds.importHint": "Importez des flux classés à partir d'un fichier d'export OPML (Feedly, Inoreader, NetNewsWire, etc.) ou collez des lignes (Catégorie | Nom | URL, ou Nom | URL).",
@@ -1812,6 +1825,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expire dans {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notifications de Messenger, Discord, Teams et Instagram, reprises en direct de votre téléphone tant qu'elles sont actives.",
       "Only this category (its category in Settings; empty = all)": "Seulement cette catégorie (sa catégorie dans les réglages ; vide = toutes)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sessions Claude Code / Codex / Cursor / OpenCode / Antigravity: en cours, en attente, inactif.",
       "1": "1",
@@ -2780,6 +2794,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "es": {
     "strings": {
+      "w.mirrorEmpty": "Nada que mostrar",
+      "w.mirrorDisconnected": "Teléfono desconectado",
+      "w.mirrorLoading": "Cargando notificaciones…",
+      "w.mirrorUnavailable": "Notificaciones no disponibles",
+      "w.mirrorLastSynced": "última sincronización",
+      "w.mirrorNotConnected": "no conectado",
       "s.feeds.import": "+ Importar fuentes (OPML / en bloque)",
       "s.feeds.importTitle": "Importar fuentes RSS / Atom",
       "s.feeds.importHint": "Importa fuentes con categorías desde un archivo de exportación OPML (Feedly, Inoreader, NetNewsWire, etc.) o pega líneas (Categoría | Nombre | URL, o Nombre | URL).",
@@ -3195,6 +3215,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expira en 1 año {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notificaciones de Messenger, Discord, Teams e Instagram, copiadas en vivo de tu teléfono mientras están activas.",
       "Only this category (its category in Settings; empty = all)": "Solo esta categoría (su categoría en Ajustes; vacío = todas)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sesiones de Claude Code / Codex / Cursor / OpenCode / Antigravity: en funcionamiento, esperando, inactivo.",
       "1": "1",
@@ -4163,6 +4184,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "it": {
     "strings": {
+      "w.mirrorEmpty": "Niente da mostrare",
+      "w.mirrorDisconnected": "Telefono disconnesso",
+      "w.mirrorLoading": "Caricamento notifiche…",
+      "w.mirrorUnavailable": "Notifiche non disponibili",
+      "w.mirrorLastSynced": "ultima sincronizzazione",
+      "w.mirrorNotConnected": "non connesso",
       "s.feeds.import": "+ Importa feed (OPML / in blocco)",
       "s.feeds.importTitle": "Importa feed RSS / Atom",
       "s.feeds.importHint": "Importa feed con categorie da un file di esportazione OPML (Feedly, Inoreader, NetNewsWire, ecc.) o incolla delle righe (Categoria | Nome | URL, oppure Nome | URL).",
@@ -4578,6 +4605,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Scade in 1 giorno {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notifiche di Messenger, Discord, Teams e Instagram, copiate dal tuo telefono finché restano attive.",
       "Only this category (its category in Settings; empty = all)": "Solo questa categoria (la sua categoria nelle Impostazioni; vuoto = tutte)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sessioni Claude Code / Codex / Cursor / OpenCode / Antigravity: in esecuzione, in attesa, inattivi.",
       "1": "1",
@@ -5546,6 +5574,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "pt": {
     "strings": {
+      "w.mirrorEmpty": "Nada a mostrar",
+      "w.mirrorDisconnected": "Telefone sem ligação",
+      "w.mirrorLoading": "A carregar notificações…",
+      "w.mirrorUnavailable": "Notificações indisponíveis",
+      "w.mirrorLastSynced": "última sincronização",
+      "w.mirrorNotConnected": "sem ligação",
       "s.feeds.import": "+ Importar feeds (OPML / em lote)",
       "s.feeds.importTitle": "Importar feeds RSS / Atom",
       "s.feeds.importHint": "Importe feeds com categorias a partir de um ficheiro de exportação OPML (Feedly, Inoreader, NetNewsWire, etc.) ou cole linhas (Categoria | Nome | URL, ou Nome | URL).",
@@ -5961,6 +5995,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expira em 1 ano {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notificações do Messenger, Discord, Teams e Instagram, espelhadas do seu telefone enquanto estão ativas.",
       "Only this category (its category in Settings; empty = all)": "Só esta categoria (a sua categoria nas Definições; vazio = todas)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sessões Claude Code / Codex / Cursor / OpenCode / Antigravity: em funcionamento, esperando, ocioso.",
       "1": "1",
@@ -6929,6 +6964,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "pt-BR": {
     "strings": {
+      "w.mirrorEmpty": "Nada para mostrar",
+      "w.mirrorDisconnected": "Telefone desconectado",
+      "w.mirrorLoading": "Carregando notificações…",
+      "w.mirrorUnavailable": "Notificações indisponíveis",
+      "w.mirrorLastSynced": "última sincronização",
+      "w.mirrorNotConnected": "desconectado",
       "s.pair.title": "Emparelhar um telefone com {pc}",
       "s.pair.qr": "Emparelhamento do código QR",
       "s.pair.downloadQr": "Código QR para o download do aplicativo",
@@ -6939,6 +6980,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Expira em 1 ano {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Notificações do Messenger, Discord, Teams e Instagram, espelhadas do seu telefone enquanto estão ativas.",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -6947,6 +6989,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "nl": {
     "strings": {
+      "w.mirrorEmpty": "Niets te tonen",
+      "w.mirrorDisconnected": "Telefoon niet verbonden",
+      "w.mirrorLoading": "Meldingen laden…",
+      "w.mirrorUnavailable": "Meldingen niet beschikbaar",
+      "w.mirrorLastSynced": "laatst gesynchroniseerd",
+      "w.mirrorNotConnected": "niet verbonden",
       "s.feeds.import": "+ Feeds importeren (OPML / in bulk)",
       "s.feeds.importTitle": "RSS- / Atom-feeds importeren",
       "s.feeds.importHint": "Importeer feeds met categorieën uit een OPML-exportbestand (Feedly, Inoreader, NetNewsWire enz.) of plak regels (Categorie | Naam | URL, of Naam | URL).",
@@ -7362,6 +7410,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Vervalt in 1 week {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Meldingen van Messenger, Discord, Teams en Instagram, live van je eigen telefoon zolang ze actief zijn.",
       "Only this category (its category in Settings; empty = all)": "Alleen deze categorie (de categorie in Instellingen; leeg = alle)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex / Cursor / OpenCode / Antigravity sessies: werken, wachten, inactief.",
       "1": "1",
@@ -8330,6 +8379,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "pl": {
     "strings": {
+      "w.mirrorEmpty": "Nic do pokazania",
+      "w.mirrorDisconnected": "Telefon odłączony",
+      "w.mirrorLoading": "Wczytywanie powiadomień…",
+      "w.mirrorUnavailable": "Powiadomienia niedostępne",
+      "w.mirrorLastSynced": "ostatnia synchronizacja",
+      "w.mirrorNotConnected": "brak połączenia",
       "s.feeds.import": "+ Importuj kanały (OPML / zbiorczo)",
       "s.feeds.importTitle": "Importuj kanały RSS / Atom",
       "s.feeds.importHint": "Zaimportuj kanały z kategoriami z pliku eksportu OPML (Feedly, Inoreader, NetNewsWire itp.) lub wklej wiersze (Kategoria | Nazwa | URL albo Nazwa | URL).",
@@ -8745,6 +8800,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Wygasa w ciągu {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Powiadomienia z Messengera, Discorda, Teams i Instagrama, przenoszone z twojego telefonu, dopóki są aktywne.",
       "Only this category (its category in Settings; empty = all)": "Tylko ta kategoria (jej kategoria w Ustawieniach; puste = wszystkie)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Sesje Claude Code / Codex / Cursor / OpenCode / Antigravity: praca, oczekiwanie, bezczynność.",
       "1": "1",
@@ -9713,6 +9769,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "ru": {
     "strings": {
+      "w.mirrorEmpty": "Нечего показать",
+      "w.mirrorDisconnected": "Телефон не подключён",
+      "w.mirrorLoading": "Загрузка уведомлений…",
+      "w.mirrorUnavailable": "Уведомления недоступны",
+      "w.mirrorLastSynced": "последняя синхронизация",
+      "w.mirrorNotConnected": "нет подключения",
       "s.feeds.import": "+ Импорт лент (OPML / списком)",
       "s.feeds.importTitle": "Импорт лент RSS / Atom",
       "s.feeds.importHint": "Импортируйте ленты с категориями из файла экспорта OPML (Feedly, Inoreader, NetNewsWire и др.) или вставьте строки (Категория | Название | URL или Название | URL).",
@@ -10128,6 +10190,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Истечение в {time} ."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Уведомления Messenger, Discord, Teams и Instagram, зеркалируемые с вашего телефона, пока они активны.",
       "Only this category (its category in Settings; empty = all)": "Только эта категория (её категория в настройках; пусто = все)",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Сеансы Claude Code / Codex / Cursor / OpenCode / Antigravity: работающие, ожидающие, неактивные.",
       "1": "1",
@@ -11096,6 +11159,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "el": {
     "strings": {
+      "w.mirrorEmpty": "Δεν υπάρχει τίποτα να δείτε",
+      "w.mirrorDisconnected": "Το τηλέφωνο αποσυνδέθηκε",
+      "w.mirrorLoading": "Φόρτωση ειδοποιήσεων…",
+      "w.mirrorUnavailable": "Οι ειδοποιήσεις δεν είναι διαθέσιμες",
+      "w.mirrorLastSynced": "τελευταίος συγχρονισμός",
+      "w.mirrorNotConnected": "χωρίς σύνδεση",
       "s.pair.title": "Ζεύξη τηλεφώνου με {pc}",
       "s.pair.qr": "Κωδικός ζεύξης QR",
       "s.pair.downloadQr": "QR κωδικός για τη λήψη της εφαρμογής",
@@ -11106,6 +11175,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Λήγει σε 1 ημέρα {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Ειδοποιήσεις από Messenger, Discord, Teams και Instagram, κατοπτρισμένες από το τηλέφωνό σας όσο είναι ενεργές.",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -11394,6 +11464,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "vi": {
     "strings": {
+      "w.mirrorEmpty": "Không có gì để hiển thị",
+      "w.mirrorDisconnected": "Điện thoại đã ngắt kết nối",
+      "w.mirrorLoading": "Đang tải thông báo…",
+      "w.mirrorUnavailable": "Thông báo không khả dụng",
+      "w.mirrorLastSynced": "đồng bộ lần cuối",
+      "w.mirrorNotConnected": "chưa kết nối",
       "s.pair.title": "Đặt điện thoại với {pc}",
       "s.pair.qr": "Cặp mã QR",
       "s.pair.downloadQr": "Mã QR cho tải ứng dụng",
@@ -11404,6 +11480,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "Hết hạn trong {time} ."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "Thông báo từ Messenger, Discord, Teams và Instagram, được sao từ điện thoại của bạn khi còn hiệu lực.",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -11692,6 +11769,12 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
   },
   "zh": {
     "strings": {
+      "w.mirrorEmpty": "没有可显示的内容",
+      "w.mirrorDisconnected": "手机已断开连接",
+      "w.mirrorLoading": "正在加载通知…",
+      "w.mirrorUnavailable": "通知不可用",
+      "w.mirrorLastSynced": "上次同步",
+      "w.mirrorNotConnected": "未连接",
       "s.feeds.import": "+ 导入订阅源（OPML / 批量）",
       "s.feeds.importTitle": "导入 RSS / Atom 订阅源",
       "s.feeds.importHint": "从 OPML 导出文件（Feedly、Inoreader、NetNewsWire 等）导入带分类的订阅源，或粘贴文本行（分类 | 名称 | URL，或 名称 | URL）。",
@@ -12107,6 +12190,7 @@ window.PhoneBoxLocaleData = Object.assign(window.PhoneBoxLocaleData || {}, {
       "s.pair.expires": "届满日期 {time}."
     },
     "catalog": {
+      "Messenger, Discord, Teams and Instagram notifications mirrored from your personal phone while they are active.": "来自 Messenger、Discord、Teams 和 Instagram 的通知，在有效期间从你的手机镜像显示。",
       "Only this category (its category in Settings; empty = all)": "仅此分类（设置中的分类；留空 = 全部）",
       "Claude Code / Codex / Cursor / OpenCode / Antigravity sessions: working, waiting, idle.": "Claude Code / Codex 光标 OpenCode / Antigravity 会话:工作,等待,闲置。",
       "1": "1",
