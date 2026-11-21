@@ -16,14 +16,16 @@ const UNICODE = [
   { id: 'u', app: 'Instagram', package: 'com.instagram.android', sender: 'Καλημέρα σου', text: 'Ça va très bien 👨‍👩‍👧‍👦', at: now - 10_000 },
 ];
 
-async function open(page, items) {
+async function open(page, items, extra = {}) {
   await page.addInitScript((data) => {
     localStorage.setItem('pb-demo-config', JSON.stringify({
       night: { enabled: false }, rules: [], display: { vibrate: false }, shortcuts: [],
       pages: [{ id: 'mirror-test', title: 'Home', widgets: [{ id: 'm1', type: 'mirror', x: 0, y: 0, w: 6, h: 2, options: {} }] }],
     }));
-    localStorage.setItem('pb-demo-mirror', JSON.stringify(data));
-  }, items);
+    localStorage.setItem('pb-demo-mirror', JSON.stringify(data.items));
+    localStorage.setItem('pb-demo-mirror-stale', JSON.stringify(data.stale === true));
+    if (data.syncedAt != null) localStorage.setItem('pb-demo-mirror-synced', JSON.stringify(data.syncedAt));
+  }, { items, stale: extra.stale, syncedAt: extra.syncedAt });
   await page.goto('/panel/');
   await expect(page.locator('[data-id="mirror-test"] .w-mirror')).toHaveCount(1);
 }
@@ -70,7 +72,18 @@ test('the sender is the title, the app is secondary, the preview sits beneath, t
 test('an empty feed says so instead of showing a blank card', async ({ page }) => {
   await open(page, []);
   await expect(page.locator('.w-mirror .mirror-row')).toHaveCount(0);
-  await expect(page.locator('.w-mirror .mirror-empty')).toBeVisible();
+  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('No active notifications');
+});
+
+test('a disconnected phone keeps the last rows and marks them as old', async ({ page }) => {
+  await open(page, ITEMS, { stale: true, syncedAt: Date.now() - 300_000 });
+  await expect(page.locator('.w-mirror .mirror-row')).toHaveCount(4);
+  await expect(page.locator('.w-mirror .w-sub')).toHaveText(/last synced/);
+});
+
+test('an empty feed from a disconnected phone says so', async ({ page }) => {
+  await open(page, [], { stale: true, syncedAt: Date.now() - 60_000 });
+  await expect(page.locator('.w-mirror .mirror-empty')).toHaveText('No notifications (phone not connected)');
 });
 
 test('Greek, accents and a multi-codepoint emoji render exactly as sent', async ({ page }) => {

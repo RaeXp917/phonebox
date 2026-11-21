@@ -16,23 +16,37 @@ public sealed class MirrorFeed
     private readonly Lock _lock = new();
     private readonly Dictionary<string, MirroredNotification> _items = new(StringComparer.Ordinal);
     private long _version;
+    private long? _syncedAt;
+    private bool _stale;
 
     public long Version { get { lock (_lock) return _version; } }
+
+    /// <summary>When the phone was last read successfully, or null if it never was.</summary>
+    public long? SyncedAt { get { lock (_lock) return _syncedAt; } }
+
+    /// <summary>True when the phone is not reachable right now and the rows are the last snapshot.</summary>
+    public bool Stale { get { lock (_lock) return _stale; } }
 
     public IReadOnlyList<MirroredNotification> Snapshot()
     {
         lock (_lock) return _items.Values.OrderByDescending(n => n.At).ThenBy(n => n.Id, StringComparer.Ordinal).ToList();
     }
 
-    /// <summary>Replaces the whole set: the phone's active list is authoritative, so removals need no history.</summary>
+    /// <summary>Replaces the whole set with a fresh snapshot from the phone: the authoritative list.</summary>
     /// <returns>True when the panel has something new to draw.</returns>
-    public bool ReplaceAll(IReadOnlyList<MirroredNotification> items)
+    public bool ReplaceAll(IReadOnlyList<MirroredNotification> items, long at)
     {
         lock (_lock)
         {
             var next = items.OrderByDescending(n => n.At).ThenBy(n => n.Id, StringComparer.Ordinal).Take(MaxItems)
                 .GroupBy(n => n.Id, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
-            if (next.Count == _items.Count && next.All(kv => _items.TryGetValue(kv.Key, out var old) && old == kv.Value)) return false;
+            var same = next.Count == _items.Count
+                && next.All(kv => _items.TryGetValue(kv.Key, out var old) && old == kv.Value);
+            // coming back from stale is a visible change even when the list is identical
+            var changed = !same || _stale;
+            _syncedAt = at;
+            _stale = false;
+            if (!changed) return false;
             _items.Clear();
             foreach (var kv in next) _items[kv.Key] = kv.Value;
             _version++;
@@ -40,9 +54,23 @@ public sealed class MirrorFeed
         }
     }
 
+    /// <summary>
+    /// The phone is not there right now. Keep what was on screen and say it is old instead of emptying the
+    /// card: a cable pulled for a minute must not look like "no notifications".
+    /// </summary>
+    public void MarkStale()
+    {
+        lock (_lock)
+        {
+            if (_stale || _items.Count == 0) return;
+            _stale = true;
+            _version++;
+        }
+    }
+
     public void Clear()
     {
-        lock (_lock) { if (_items.Count == 0) return; _items.Clear(); _version++; }
+        lock (_lock) { if (_items.Count == 0 && !_stale) return; _items.Clear(); _stale = false; _version++; }
     }
 }
 
@@ -170,6 +198,7 @@ public sealed class NotificationMirror(ConfigStore cfg, AdbReverse adb, MirrorFe
     {
         string? usedSerial = null;
         var backoff = TimeSpan.FromSeconds(3);
+        var failures = 0;
         while (!ct.IsCancellationRequested)
         {
             var conf = cfg.Get().NotifyMirror;
@@ -183,9 +212,8 @@ public sealed class NotificationMirror(ConfigStore cfg, AdbReverse adb, MirrorFe
             var serial = Source(conf.Serial);
             if (serial is null)
             {
-                // no phone to read from (or only the panel itself): forget what we had, so a later reconnect
-                // starts from the phone's current list instead of replaying something dismissed meanwhile
-                feed.Clear();
+                // nothing to read from: keep the last snapshot, clearly marked, instead of emptying the card
+                feed.MarkStale();
                 usedSerial = null;
                 await Task.Delay(TimeSpan.FromSeconds(3), ct);
                 continue;
@@ -197,16 +225,19 @@ public sealed class NotificationMirror(ConfigStore cfg, AdbReverse adb, MirrorFe
             try
             {
                 var dump = await AdbReverse.Adb(adbPath, $"-s {serial} shell dumpsys notification --noredact", ct);
-                if (feed.ReplaceAll(NotificationDump.Parse(dump)))
+                if (feed.ReplaceAll(NotificationDump.Parse(dump), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))
                     log.LogInformation("notification mirror: {Count} active from {Serial}", feed.Snapshot().Count, serial);
                 if (usedSerial != serial) log.LogInformation("notification mirror: reading {Serial}", serial);
                 usedSerial = serial;
+                failures = 0;
                 backoff = TimeSpan.FromSeconds(3);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
                 log.LogDebug("notification mirror: {Msg}", ex.Message);
+                // one failed read is not a lost phone; two in a row is, as far as the panel is concerned
+                if (++failures >= 2) feed.MarkStale();
                 await Task.Delay(backoff, ct);
                 backoff = TimeSpan.FromSeconds(Math.Min(30, backoff.TotalSeconds * 2));
                 continue;

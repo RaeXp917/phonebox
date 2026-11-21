@@ -1,4 +1,4 @@
-import { $, API, D, LEVEL_COLOR, LOCALE, mediaHtml, METRICS, PANEL_HEADERS, PREVIEW, Q_STYLE, S_ORDER, ago, api, averageColor, buildLayout, buzz, cfg, cfgVersion, chart, color, cssVar, currentProcessesSort, emit, fillIcon, fmtClock, fmtDur, fmtHM, fmtMem, fmtReset, fmtTime, fmtValue, gotoProcesses, gpuMem, gpusOf, h, en, haptic, hasProcessesPage, hist, hour12, icon, keyButton, labelled, levelOf, media, metricText, online, openSheet, paceInfo, pad, prRow, pushView, quotaProviders, r1, registerProcessesSorter, renderStatus, ringSvg, setArtColor, configMark, configReadSince, localWriteStored, setMediaState, setVolDragging, shortDur, shortGpu, store, t, tick, toast, volDragging, wxBlock, wxDeg, wxIcon, emo, rich } from '../main.js';
+import { $, API, D, LEVEL_COLOR, LOCALE, mediaHtml, METRICS, PANEL_HEADERS, PREVIEW, Q_STYLE, S_ORDER, ago, api, averageColor, buildLayout, buzz, cfg, cfgVersion, chart, color, cssVar, currentProcessesSort, emit, fillIcon, fmtClock, fmtDur, fmtHM, fmtMem, fmtReset, fmtTime, fmtValue, gotoProcesses, gpuMem, gpusOf, h, en, haptic, hasProcessesPage, hist, hour12, icon, keyButton, labelled, levelOf, media, metricText, mirrorStale, mirrorSyncedAt, online, openSheet, paceInfo, pad, prRow, pushView, quotaProviders, r1, registerProcessesSorter, renderStatus, ringSvg, setArtColor, configMark, configReadSince, localWriteStored, setMediaState, setVolDragging, shortDur, shortGpu, store, t, tick, toast, volDragging, wxBlock, wxDeg, wxIcon, emo, rich } from '../main.js';
 import { W } from '../registry.js';
 import { invalidateDeckState } from './controls.js';
 
@@ -1343,17 +1343,21 @@ W.mirror = {
   needs: ['mirror', 'tick'],
   create(box) {
     const list = h('div', 'mirror-list');
-    box.append(h('div', 'w-title', en('Phone notifications')), list);
+    const note = h('span', 'w-sub');
+    box.append(h('div', 'w-title', en('Phone notifications'), note), list);
     let shown = '';
     return {
       update(kind) {
+        // the source phone being away keeps the last snapshot on screen, clearly marked as old
+        if (mirrorStale) note.replaceChildren(...(mirrorSyncedAt ? [en('last synced'), ' ' + ago(mirrorSyncedAt)] : [en('not connected')]));
+        else note.replaceChildren();
         const items = D.mirror || [];
         // re-render on a new set, and once a minute so the relative times stay honest
         const key = items.map((n) => n.id + '#' + (n.at || 0) + '#' + (n.text || '').length).join('|') + '@' + Math.floor(Date.now() / 60000);
         if (key === shown && kind === 'tick') return;
         shown = key;
         if (!items.length) {
-          list.replaceChildren(h('div', 'mirror-empty', en('No active notifications')));
+          list.replaceChildren(h('div', 'mirror-empty', mirrorStale ? en('No notifications (phone not connected)') : en('No active notifications')));
           return;
         }
         list.replaceChildren(...items.slice(0, 10).map((n) => h('div', 'mirror-row',

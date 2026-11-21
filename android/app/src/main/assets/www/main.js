@@ -102,6 +102,10 @@ const evOffer = (e) => {          // one event from the stream or a state answer
 export let pushVersion = null;
 /** Version of the mirrored phone notifications, so a change refreshes the widget without a full poll. */
 export let mirrorVersion = null;
+/** True when the source phone is not reachable and the rows are the last snapshot (see MirrorFeed.MarkStale). */
+export let mirrorStale = false;
+/** When the phone was last read, for the "last synced" line. */
+export let mirrorSyncedAt = null;
 
 /** Latest data from the agent and the web; widgets read from here. */
 export const D = { state: null, quotas: null, work: null, procs: null, push: {}, mirror: [], weather: null, calendar: null, notes: store.get('notes', []) };
@@ -2125,6 +2129,8 @@ export async function loadMirror() {
     appliedMirrorRequest = req;
     D.mirror = Array.isArray(r.items) ? r.items : [];
     mirrorVersion = r.version;
+    mirrorStale = r.stale === true;
+    mirrorSyncedAt = r.syncedAt ?? null;
     emit('mirror');
   } catch (_) {}
 }

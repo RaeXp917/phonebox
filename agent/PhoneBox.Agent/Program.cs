@@ -437,7 +437,10 @@ app.MapGet("/api/catalog", () => Results.Text($"{{\"cols\":{Catalog.Cols},\"rows
 // POST /api/refresh          refreshes quotas/GitHub now and makes the phone reload its settings and data; ?reload=1 reloads the whole panel
 app.MapGet("/api/push", (PushStore push) => Results.Json(new { version = push.Version, items = push.Snapshot() }));
 // The notifications mirrored from the personal phone: active items only, keyed by the phone's own key.
-app.MapGet("/api/mirror", (MirrorFeed mirror) => Results.Json(new { version = mirror.Version, items = mirror.Snapshot() }));app.MapGet("/api/push/{key}", (string key, PushStore push) => push.Get(key) is { } item ? Results.Json(item) : Results.NotFound());
+app.MapGet("/api/mirror", (MirrorFeed mirror) => Results.Json(new
+{
+    version = mirror.Version, items = mirror.Snapshot(), stale = mirror.Stale, syncedAt = mirror.SyncedAt,
+}));app.MapGet("/api/push/{key}", (string key, PushStore push) => push.Get(key) is { } item ? Results.Json(item) : Results.NotFound());
 app.MapMethods("/api/push/{key}", ["POST", "PUT"], async (string key, int? ttl, HttpRequest req, PushStore push) =>
 {
     var (data, error) = await PushStore.ReadBody(req);

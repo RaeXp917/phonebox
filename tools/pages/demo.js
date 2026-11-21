@@ -471,7 +471,8 @@
 
   async function handle(method, path, q, body, headers) {
     // The mirrored phone notifications, as the agent serves them (the test seeds pb-demo-mirror).
-    if (path === '/api/mirror') return json({ version: store.get('pb-demo-mirror-version', 1), items: store.get('pb-demo-mirror', []) });
+    if (path === '/api/mirror') return json({ version: store.get('pb-demo-mirror-version', 1), items: store.get('pb-demo-mirror', []),
+      stale: store.get('pb-demo-mirror-stale', false) === true, syncedAt: store.get('pb-demo-mirror-synced', null) });
     if (path === '/api/controls/obs') return json(deckObsState());
     if (path.startsWith('/api/controls/obs/') && method === 'POST') {
       // ObsMonitor.DeckAct: only when a widget allows control, and only for inputs, sources and scenes OBS really has

@@ -87,16 +87,16 @@ public class NotificationMirrorTests
     public void TheFeedFollowsAddUpdateAndRemove()
     {
         var feed = new MirrorFeed();
-        Assert.True(feed.ReplaceAll([Item("a", "one"), Item("b", "two")]));
+        Assert.True(feed.ReplaceAll([Item("a", "one"), Item("b", "two")], 1));
         Assert.Equal(2, feed.Snapshot().Count);
 
         var afterUpdate = feed.Version;
-        Assert.True(feed.ReplaceAll([Item("a", "one, edited"), Item("b", "two")]));
+        Assert.True(feed.ReplaceAll([Item("a", "one, edited"), Item("b", "two")], 2));
         Assert.Equal(afterUpdate + 1, feed.Version);
         Assert.Equal(2, feed.Snapshot().Count);
         Assert.Equal("one, edited", feed.Snapshot().First(i => i.Id == "a").Text);
 
-        Assert.True(feed.ReplaceAll([Item("b", "two")]));
+        Assert.True(feed.ReplaceAll([Item("b", "two")], 3));
         Assert.Single(feed.Snapshot());
         Assert.Equal("b", feed.Snapshot()[0].Id);
     }
@@ -105,9 +105,9 @@ public class NotificationMirrorTests
     public void AnUnchangedListDoesNotBumpTheVersion()
     {
         var feed = new MirrorFeed();
-        feed.ReplaceAll([Item("a", "one")]);
+        feed.ReplaceAll([Item("a", "one")], 1);
         var v = feed.Version;
-        Assert.False(feed.ReplaceAll([Item("a", "one")]));
+        Assert.False(feed.ReplaceAll([Item("a", "one")], 2));
         Assert.Equal(v, feed.Version);
     }
 
@@ -116,7 +116,7 @@ public class NotificationMirrorTests
     {
         var feed = new MirrorFeed();
         var many = Enumerable.Range(0, MirrorFeed.MaxItems + 12).Select(i => Item("id" + i, "t" + i, i)).ToList();
-        feed.ReplaceAll(many);
+        feed.ReplaceAll(many, 1);
         Assert.Equal(MirrorFeed.MaxItems, feed.Snapshot().Count);
         Assert.Contains(feed.Snapshot(), i => i.Id == "id" + (MirrorFeed.MaxItems + 11));
         Assert.DoesNotContain(feed.Snapshot(), i => i.Id == "id0");
@@ -126,7 +126,7 @@ public class NotificationMirrorTests
     public void ClearingEmptiesTheFeedAndBumpsOnce()
     {
         var feed = new MirrorFeed();
-        feed.ReplaceAll([Item("a", "one")]);
+        feed.ReplaceAll([Item("a", "one")], 1);
         var v = feed.Version;
         feed.Clear();
         Assert.Empty(feed.Snapshot());
@@ -180,12 +180,71 @@ public class NotificationMirrorTests
     public void AnUpdateKeepsTheSameIdentityAndReplacesTheText()
     {
         var feed = new MirrorFeed();
-        feed.ReplaceAll(NotificationDump.Parse(One(title: "String (Alice)", text: "String (one)")));
-        Assert.True(feed.ReplaceAll(NotificationDump.Parse(One(title: "String (Alice)", text: "String (two)"))));
+        feed.ReplaceAll(NotificationDump.Parse(One(title: "String (Alice)", text: "String (one)")), 1);
+        Assert.True(feed.ReplaceAll(NotificationDump.Parse(One(title: "String (Alice)", text: "String (two)")), 2));
         var item = Assert.Single(feed.Snapshot());
         Assert.Equal("Alice", item.Sender);
         Assert.Equal("two", item.Text);
-        Assert.True(feed.ReplaceAll(NotificationDump.Parse("")), "a withdrawal empties the feed");
+        Assert.True(feed.ReplaceAll(NotificationDump.Parse(""), 3), "a withdrawal empties the feed");
         Assert.Empty(feed.Snapshot());
+    }
+
+    // A pulled cable must not look like "no notifications": the rows stay, marked stale, until a fresh
+    // snapshot from the phone replaces them.
+    [Fact]
+    public void LosingThePhoneKeepsTheLastSnapshotAndMarksItStale()
+    {
+        var feed = new MirrorFeed();
+        feed.ReplaceAll([Item("a", "one", 10)], 100);
+        Assert.False(feed.Stale);
+        Assert.Equal(100, feed.SyncedAt);
+
+        feed.MarkStale();
+        Assert.True(feed.Stale);
+        Assert.Single(feed.Snapshot());
+        var staleVersion = feed.Version;
+
+        feed.MarkStale();                       // stays marked, no extra redraw
+        Assert.Equal(staleVersion, feed.Version);
+
+        // a fresh snapshot is authoritative: whatever disappeared while away is gone, the flag clears
+        Assert.True(feed.ReplaceAll([Item("b", "two", 20)], 200));
+        Assert.False(feed.Stale);
+        Assert.Equal(200, feed.SyncedAt);
+        Assert.Equal("b", Assert.Single(feed.Snapshot()).Id);
+    }
+
+    [Fact]
+    public void MarkingAnEmptyFeedStaleDoesNothing()
+    {
+        var feed = new MirrorFeed();
+        feed.MarkStale();
+        Assert.False(feed.Stale);
+        Assert.Equal(0, feed.Version);
+        Assert.Null(feed.SyncedAt);
+    }
+
+    // Coming back from stale is a visible change even when the phone's list is identical.
+    [Fact]
+    public void ReconnectingAfterStaleRedraws()
+    {
+        var feed = new MirrorFeed();
+        feed.ReplaceAll([Item("a", "one", 10)], 100);
+        feed.MarkStale();
+        var v = feed.Version;
+        Assert.True(feed.ReplaceAll([Item("a", "one", 10)], 200));
+        Assert.True(feed.Version > v);
+        Assert.False(feed.Stale);
+    }
+
+    [Fact]
+    public void DisablingTheMirrorEmptiesTheFeed()
+    {
+        var feed = new MirrorFeed();
+        feed.ReplaceAll([Item("a", "one", 10)], 100);
+        feed.MarkStale();
+        feed.Clear();
+        Assert.Empty(feed.Snapshot());
+        Assert.False(feed.Stale);
     }
 }
