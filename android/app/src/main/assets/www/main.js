@@ -100,9 +100,11 @@ const evOffer = (e) => {          // one event from the stream or a state answer
   } else { evMark(e.seq); handleEvent(e); }
 };
 export let pushVersion = null;
+/** Version of the mirrored phone notifications, so a change refreshes the widget without a full poll. */
+export let mirrorVersion = null;
 
 /** Latest data from the agent and the web; widgets read from here. */
-export const D = { state: null, quotas: null, work: null, procs: null, push: {}, weather: null, calendar: null, notes: store.get('notes', []) };
+export const D = { state: null, quotas: null, work: null, procs: null, push: {}, mirror: [], weather: null, calendar: null, notes: store.get('notes', []) };
 
 export const HIST = 90;
 export const hist = { cpu: [], gpu: [], ram: [], vram: [], down: [], up: [], ping: [], gputemp: [], cputemp: [], hotspot: [], gpupower: [], gpuclock: [] };
@@ -2112,8 +2114,22 @@ export async function loadProcs() {
 }
 
 let pushRequest = 0, appliedPushRequest = 0;
-export async function loadPush() {
-  const req = ++pushRequest;
+let mirrorRequest = 0, appliedMirrorRequest = 0;
+
+/** The active notifications mirrored from the personal phone: the agent reads the phone's own list. */
+export async function loadMirror() {
+  const req = ++mirrorRequest;
+  try {
+    const r = await api('/mirror');
+    if (req < appliedMirrorRequest) return;
+    appliedMirrorRequest = req;
+    D.mirror = Array.isArray(r.items) ? r.items : [];
+    mirrorVersion = r.version;
+    emit('mirror');
+  } catch (_) {}
+}
+
+export async function loadPush() {  const req = ++pushRequest;
   try {
     const r = await api('/push');
     if (req < appliedPushRequest) return;
@@ -2135,7 +2151,7 @@ export function setOnline(on) {
       if (!online && cfg.display?.keepAwake !== false) keepScreenOn(false);
     }, 60_000);
   }
-  if (on && online !== true) { loadConfig(); loadQuotas(); loadWork(); loadPush(); loadApprovals(); loadCalendar(); }
+  if (on && online !== true) { loadConfig(); loadQuotas(); loadWork(); loadPush(); loadMirror(); loadApprovals(); loadCalendar(); }
   const changed = online !== on;
   online = on;
   if (changed) emit('state');
@@ -2161,6 +2177,7 @@ export function applyState(s, replayGen = null) {
   setOnline(true);
   if (s.cfgVersion !== undefined && cfgVersion !== null && s.cfgVersion !== cfgVersion) loadConfig();
   if (s.pushVersion !== undefined && s.pushVersion !== pushVersion) loadPush();
+  if (s.mirrorVersion !== undefined && s.mirrorVersion !== mirrorVersion) loadMirror();
   if (fresh) {
     stateTs = s.ts ?? stateTs;
     // the agent restarted: it counts events from 0 again — forget what was handled and replay its backlog once
@@ -2224,7 +2241,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && !a
 // what the paused panel skipped is fetched at once, not at the next interval
 function wokeUp() {
   if (!online) return;
-  loadConfig(); loadPush(); loadApprovals();
+  loadConfig(); loadPush(); loadMirror(); loadApprovals();
   if (anyNeeds('quotas')) loadQuotas();
   if (anyNeeds('calendar')) loadCalendar();
   if (anyNeeds('work') && !streaming()) loadWork();

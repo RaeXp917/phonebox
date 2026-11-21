@@ -47,6 +47,9 @@ public sealed class AgentConfig
     /// <summary>The Android app the agent opens over USB: the official package, or a side-by-side build's package.</summary>
     public string? AppPackage { get; set; }
 
+    /// <summary>Notifications mirrored from the personal phone, for the Notifications widget.</summary>
+    public NotifyMirrorConfig NotifyMirror { get; set; } = new();
+
     /// <summary>The pages a phone shows: its own selection (Settings › Phones), or all of them.</summary>
     public IEnumerable<PageConfig> PagesFor(string? deviceId)
     {
@@ -101,8 +104,17 @@ public sealed class AgentConfig
         .Any(w => w.Type is "codexbar" or "quotas" && w.Bool("showOverview") == true);
 }
 
-public sealed class WeatherConfig
+/// <summary>Mirrors the active notifications of the personal phone to the panel; see NotificationMirror.</summary>
+public sealed class NotifyMirrorConfig
 {
+    public bool Enabled { get; set; } = true;
+    /// <summary>The phone to read; empty = the first attached device that is not this panel's.</summary>
+    public string? Serial { get; set; }
+    /// <summary>How often the active list is read, in seconds (1 to 30).</summary>
+    public int PollSeconds { get; set; } = 2;
+}
+
+public sealed class WeatherConfig{
     public string City { get; set; } = "Tallinn";
     public double Lat { get; set; } = 59.437;
     public double Lon { get; set; } = 24.745;
@@ -544,6 +556,9 @@ public sealed partial class ConfigStore(string path)
         // the app the agent opens over USB: a package id or nothing (never a component or a command)
         c.AppPackage = string.IsNullOrWhiteSpace(c.AppPackage) ? null
             : AppPackageId().IsMatch(c.AppPackage.Trim()) ? c.AppPackage.Trim() : null;
+        c.NotifyMirror ??= new();
+        c.NotifyMirror.PollSeconds = Math.Clamp(c.NotifyMirror.PollSeconds, 1, 30);
+        c.NotifyMirror.Serial = string.IsNullOrWhiteSpace(c.NotifyMirror.Serial) ? null : c.NotifyMirror.Serial.Trim();
         c.Weather.Model = WeatherModelJsonConverter.Normalize(c.Weather.Model);
         c.CodexBar ??= new();
         c.CodexBar.Providers = (c.CodexBar.Providers ?? []).Where(p => p is "claude" or "codex" or "antigravity").Distinct().ToArray();

@@ -1296,6 +1296,44 @@ W.command = {
   },
 };
 
+/** The four apps the agent mirrors, with their brand colour for the row badge. */
+const MIRROR_APPS = { Messenger: '#0084ff', Discord: '#5865f2', Teams: '#6264a7', Instagram: '#e1306c' };
+
+/**
+ * Notifications mirrored from the personal phone. The agent keeps only what the phone reports as active, so
+ * a row disappears when the phone withdraws the notification and an update replaces its row instead of adding one.
+ */
+W.mirror = {
+  needs: ['mirror', 'tick'],
+  create(box) {
+    const list = h('div', 'mirror-list');
+    box.append(h('div', 'w-title', en('Phone notifications')), list);
+    let shown = '';
+    return {
+      update(kind) {
+        const items = D.mirror || [];
+        // re-render on a new set, and once a minute so the relative times stay honest
+        const key = items.map((n) => n.id + '#' + (n.at || 0) + '#' + (n.text || '').length).join('|') + '@' + Math.floor(Date.now() / 60000);
+        if (key === shown && kind === 'tick') return;
+        shown = key;
+        if (!items.length) {
+          list.replaceChildren(h('div', 'mirror-empty', en('No active notifications')));
+          return;
+        }
+        list.replaceChildren(...items.slice(0, 10).map((n) => {
+          const dot = h('span', 'mirror-dot', (n.app || '?').slice(0, 1));
+          dot.style.setProperty('--d', MIRROR_APPS[n.app] || '#64748b');
+          return h('div', 'mirror-row',
+            dot,
+            h('div', 'mirror-body',
+              h('div', 'mirror-top', h('b', null, n.sender || n.app), h('span', 'mirror-app', null, n.app), h('span', 'mirror-time', null, n.at ? ago(n.at) : '')),
+              n.text ? h('div', 'mirror-text', null, n.text) : null));
+        }));
+      },
+    };
+  },
+};
+
 W.push = {
   needs: ['push', 'tick'],
   create(box, { o }) {

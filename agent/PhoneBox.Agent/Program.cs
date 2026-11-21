@@ -64,6 +64,7 @@ builder.Services.AddSingleton<SpotifyControl>();
 builder.Services.AddSingleton<ControlDeck>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ControlDeck>());
 builder.Services.AddSingleton<PushStore>();
+builder.Services.AddSingleton<MirrorFeed>();
 builder.Services.AddSingleton<CommandRunner>();
 builder.Services.AddSingleton<ApprovalStore>();
 builder.Services.AddSingleton<HomeAssistant>();
@@ -91,6 +92,7 @@ AddMonitor<DiscordMonitor>(builder.Services);
 AddMonitor<BatteryMonitor>(builder.Services);
 AddMonitor<RuleEngine>(builder.Services);
 AddMonitor<ChargeGuard>(builder.Services);
+AddMonitor<NotificationMirror>(builder.Services);
 builder.Services.AddHostedService<Tray>();
 
 var app = builder.Build();
@@ -434,7 +436,8 @@ app.MapGet("/api/catalog", () => Results.Text($"{{\"cols\":{Catalog.Cols},\"rows
 // POST /api/goto/{page}      switches the phone to a page (id, or 1-based number)
 // POST /api/refresh          refreshes quotas/GitHub now and makes the phone reload its settings and data; ?reload=1 reloads the whole panel
 app.MapGet("/api/push", (PushStore push) => Results.Json(new { version = push.Version, items = push.Snapshot() }));
-app.MapGet("/api/push/{key}", (string key, PushStore push) => push.Get(key) is { } item ? Results.Json(item) : Results.NotFound());
+// The notifications mirrored from the personal phone: active items only, keyed by the phone's own key.
+app.MapGet("/api/mirror", (MirrorFeed mirror) => Results.Json(new { version = mirror.Version, items = mirror.Snapshot() }));app.MapGet("/api/push/{key}", (string key, PushStore push) => push.Get(key) is { } item ? Results.Json(item) : Results.NotFound());
 app.MapMethods("/api/push/{key}", ["POST", "PUT"], async (string key, int? ttl, HttpRequest req, PushStore push) =>
 {
     var (data, error) = await PushStore.ReadBody(req);
@@ -476,6 +479,7 @@ object State(IServiceProvider sp, long? ev)
         ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
         host = Environment.MachineName,
         cfgVersion = sp.GetRequiredService<ConfigStore>().Version.ToString(),
+        mirrorVersion = sp.GetRequiredService<MirrorFeed>().Version,
         pushVersion = push.Version,
         evSeq = push.Seq,
         events = ev is { } since ? push.Since(since) : [],
