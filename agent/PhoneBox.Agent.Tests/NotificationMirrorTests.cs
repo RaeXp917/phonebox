@@ -331,6 +331,18 @@ public class NotificationMirrorTests
         Assert.Equal(0, feed.PushedAtTick);
     }
 
+    // An emulator or a spare phone plugged in for something else must not take the feed over from the phone that
+    // is pushing. Naming a serial in the config still means the user wants adb to read that phone.
+    [Fact]
+    public void AdbStopsBeingTheSourceOnceAPhoneHasPushed()
+    {
+        Assert.True(NotificationMirror.AdbMayRead(null, null));
+        Assert.False(NotificationMirror.AdbMayRead("phone-device", null));
+        Assert.False(NotificationMirror.AdbMayRead("phone-device", "  "));
+        Assert.True(NotificationMirror.AdbMayRead("phone-device", "RFCY40PLTAH"));
+        Assert.True(NotificationMirror.AdbMayRead(null, "RFCY40PLTAH"));
+    }
+
     // A busy phone can have more active notifications than the card shows: that is not an error, the newest win.
     [Fact]
     public void ManyActiveNotificationsAreKeptAndCappedNotRefused()

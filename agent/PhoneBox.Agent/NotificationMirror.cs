@@ -251,6 +251,18 @@ public sealed class NotificationMirror(ConfigStore cfg, AdbReverse adb, MirrorFe
                 continue;
             }
 
+            // The phone's own listener owns the feed once it has pushed: another attached device (an emulator, a
+            // spare phone) must never replace its rows, and silence means the phone is gone, not "read somewhere
+            // else". Without a push source the adb path stays the only one, as before; an explicitly configured
+            // serial still means the user wants adb to read that phone.
+            if (!AdbMayRead(feed.Source, conf.Serial))
+            {
+                var pushedAt = feed.PushedAtTick;
+                if (pushedAt == 0 || Environment.TickCount64 - pushedAt >= PushFreshMs) feed.MarkStale();
+                await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                continue;
+            }
+
             // The phone's own listener pushes over Wi-Fi (no cable needed); while those pushes are fresh,
             // adb has nothing to add and must not mark the feed stale behind its back.
             var pushed = feed.PushedAtTick;
@@ -305,6 +317,14 @@ public sealed class NotificationMirror(ConfigStore cfg, AdbReverse adb, MirrorFe
         var panel = cfg.Get().DeviceSerial;
         return adb.AllDevices.FirstOrDefault(d => !string.Equals(d, panel, StringComparison.Ordinal));
     }
+
+    /// <summary>
+    /// True when adb may read the feed: only while no phone has pushed a snapshot yet, or when the user named a
+    /// serial. A phone that pushed owns the feed; another attached device (an emulator, a spare phone) must not
+    /// replace its rows, and going quiet means that phone is gone.
+    /// </summary>
+    internal static bool AdbMayRead(string? pushSource, string? configuredSerial) =>
+        pushSource is null || !string.IsNullOrWhiteSpace(configuredSerial);
 }
 
 /// <summary>
