@@ -129,6 +129,16 @@ public class UsbLinkTests
         Assert.False(UsbLink.OwnsKeyProvider(""));
     }
 
+    // A side-by-side fork has its own application id but the same provider authority and class namespace; the agent
+    // has to look up the id it was told to use, or every fork app is called "too old" and cannot pair over USB.
+    [Fact]
+    public void TheProviderIsCheckedAgainstThePackageTheAgentTalksTo()
+    {
+        var fork = Owned.Replace("Provider{3ec2f24 net.oxog.phonebox.deskpanel/", "Provider{3ec2f24 net.oxog.phonebox.deskpanel.fork/");
+        Assert.True(UsbLink.OwnsKeyProvider(fork, "net.oxog.phonebox.deskpanel.fork"));
+        Assert.False(UsbLink.OwnsKeyProvider(fork));
+    }
+
     [Fact]
     public void TheAppVersionIsReadFromDumpsys()
     {

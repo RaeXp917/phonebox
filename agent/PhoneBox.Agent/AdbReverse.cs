@@ -266,8 +266,9 @@ public sealed class AdbReverse(ConfigStore cfg, ILogger<AdbReverse> log, AgentEn
     {
         if (usb is null) return;
         _keyTriedAt[d] = Environment.TickCount64;
-        var dump = await Adb(adb, $"-s {d} shell dumpsys package {UsbLink.Package}", ct, anyExit: true);
-        var key = UsbLink.OwnsKeyProvider(dump)
+        var packageName = cfg.Get().AppPackage is { Length: > 0 } app ? app : UsbLink.Package;
+        var dump = await Adb(adb, $"-s {d} shell dumpsys package {packageName}", ct, anyExit: true);
+        var key = UsbLink.OwnsKeyProvider(dump, packageName)
             ? UsbLink.ParseKey(await Adb(adb, $"-s {d} shell content query --uri {UsbLink.KeyUri}", ct, anyExit: true))
             : null;
         if (key is not null)

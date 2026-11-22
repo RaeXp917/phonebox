@@ -83,14 +83,27 @@ public sealed partial class UsbLink(int port, string pin)
         KeyRow().Match(output) is { Success: true } m ? m.Groups[1].Value : null;
 
     /// <summary>
-    /// True when "dumpsys package net.oxog.phonebox.deskpanel" lists the key provider as the app's own. Another app
-    /// could have taken the provider name while an older PhoneBox without it was installed; the name can belong to one
-    /// app only, so the app's own listing settles it. Output in any other shape counts as not the app's.
+    /// True when "dumpsys package &lt;package&gt;" lists the key provider as the app's own. Another app could have taken
+    /// the provider name while an older PhoneBox without it was installed; the name can belong to one app only, so the
+    /// app's own listing settles it. Output in any other shape counts as not the app's. The package is the one the
+    /// agent talks to (a side-by-side fork has its own id); the provider's class keeps the project namespace.
     /// </summary>
-    internal static bool OwnsKeyProvider(string dumpsys) => OwnedProvider().IsMatch(dumpsys);
+    internal static bool OwnsKeyProvider(string dumpsys, string? package = null) =>
+        OwnedProvider(package ?? Package).IsMatch(dumpsys);
 
-    [GeneratedRegex(@"^\s*\[net\.oxog\.phonebox\.deskpanel\.usb\]:\s*\r?\n\s*Provider\{[0-9a-f]+ net\.oxog\.phonebox\.deskpanel/(?:\.|net\.oxog\.phonebox\.deskpanel\.)UsbKeyProvider\}", RegexOptions.Multiline)]
-    private static partial Regex OwnedProvider();
+    private static readonly Dictionary<string, Regex> Providers = [];
+    private static Regex OwnedProvider(string package)
+    {
+        lock (Providers)
+        {
+            if (!Providers.TryGetValue(package, out var pattern))
+                Providers[package] = pattern = new Regex(
+                    @"^\s*\[net\.oxog\.phonebox\.deskpanel\.usb\]:\s*\r?\n\s*Provider\{[0-9a-f]+ "
+                    + Regex.Escape(package) + @"/(?:\.|net\.oxog\.phonebox\.deskpanel\.)UsbKeyProvider\}",
+                    RegexOptions.Multiline);
+            return pattern;
+        }
+    }
 
     /// <summary>The app's versionName in "dumpsys package" output, or null.</summary>
     internal static string? ParseVersionName(string output) =>
