@@ -2268,17 +2268,20 @@ export async function loadConfig() {
   try {
     const r = await api('/config');
     if (request < appliedConfigRequest || request < writeBarrier) return;
+    const before = JSON.stringify(cfg);
     cfg = { ...DEFAULT_CFG, ...r.config };
     cfgVersion = r.version;
     appliedConfigRequest = request;
     configFailedAt = 0;
+    const same = JSON.stringify(cfg) === before;
     // Every successful read reconciles the page with it: buildLayout returns at once when nothing that shapes the
     // layout changed, so a config that arrives equal, or a panel whose pages drifted from it, still ends up drawn.
+    // The weather is only fetched when the settings changed: a poll must not repeat that request.
     store.set('cfg', cfg);
     nightBeforeBuild();
     buildLayout();
     applyDisplay();
-    loadWeather();
+    if (!same) loadWeather();
   } catch (_) {
     // A read that failed must not leave the panel on an old layout until it is restarted: the state poll retries
     // (throttled) and the next successful answer rebuilds above.
