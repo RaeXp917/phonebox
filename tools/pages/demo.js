@@ -526,7 +526,12 @@
     if (path === '/api/controls/state') return json(await deckState());
     if (path.startsWith('/api/controls/command/') && method === 'POST') return json(await controlCommand(path.split('/').pop(), q));
     if (path === '/api/state') return json(state(q.has('ev') ? +q.get('ev') : null));
-    if (path === '/api/config') return json({ version: cfgVersion(), config: publicConfig(await config()) });
+    // pb-demo-config-fail: the next N config reads fail, like a computer that is restarting while the panel boots.
+    if (path === '/api/config') {
+      const fails = store.get('pb-demo-config-fail', 0);
+      if (fails > 0) { store.set('pb-demo-config-fail', fails - 1); return json({ error: 'the computer is not ready' }, 503); }
+      return json({ version: cfgVersion(), config: publicConfig(await config()) });
+    }
     if (path.startsWith('/api/widget/') && path.endsWith('/note') && method === 'POST') {
       const parts = path.split('/');
       const pageId = decodeURIComponent(parts[3]);

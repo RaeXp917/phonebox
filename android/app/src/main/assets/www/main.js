@@ -91,6 +91,7 @@ export function setCfgVersion(v) { if (v != null) cfgVersion = v; }
 let configRequest = 0;
 let appliedConfigRequest = 0;
 let writeBarrier = 0; // config reads numbered below this started before the panel's own last write
+let configFailedAt = 0; // when a config read last failed, so the state poll retries it without hammering
 export let online = null;
 export let lastTouch = Date.now();
 export let lastUserTouch = 0;     // last real touch or key (rules wait a while after it)
@@ -2267,21 +2268,22 @@ export async function loadConfig() {
   try {
     const r = await api('/config');
     if (request < appliedConfigRequest || request < writeBarrier) return;
-    const before = JSON.stringify(cfg);
-    const first = cfgVersion === null;
     cfg = { ...DEFAULT_CFG, ...r.config };
     cfgVersion = r.version;
     appliedConfigRequest = request;
-    if (first || JSON.stringify(cfg) !== before) {
-      store.set('cfg', cfg);
-      if (JSON.stringify(cfg) !== before) {
-        nightBeforeBuild();
-        buildLayout();
-        applyDisplay();
-      }
-      loadWeather();
-    }
-  } catch (_) {}
+    configFailedAt = 0;
+    // Every successful read reconciles the page with it: buildLayout returns at once when nothing that shapes the
+    // layout changed, so a config that arrives equal, or a panel whose pages drifted from it, still ends up drawn.
+    store.set('cfg', cfg);
+    nightBeforeBuild();
+    buildLayout();
+    applyDisplay();
+    loadWeather();
+  } catch (_) {
+    // A read that failed must not leave the panel on an old layout until it is restarted: the state poll retries
+    // (throttled) and the next successful answer rebuilds above.
+    configFailedAt = Date.now();
+  }
 }
 
 // All-day events have a date but no time zone: the agent sends the UTC midnight of that date. Show them on that date in
@@ -2436,7 +2438,8 @@ export function applyState(s, replayGen = null) {
   D.state = s;
   media = mediaFrom(media, s.media);
   setOnline(true);
-  if (s.cfgVersion !== undefined && cfgVersion !== null && s.cfgVersion !== cfgVersion) loadConfig();
+  // a panel whose first config read failed has no version yet; the state still has to make it retry
+  if (s.cfgVersion !== undefined && s.cfgVersion !== cfgVersion && Date.now() - configFailedAt > 4000) loadConfig();
   if (s.pushVersion !== undefined && s.pushVersion !== pushVersion) loadPush();
   if (s.mirrorVersion !== undefined && s.mirrorVersion !== mirrorVersion) loadMirror();
   if (fresh) {
