@@ -74,7 +74,9 @@ public sealed class MediaMonitor(ILogger<MediaMonitor> log) : BackgroundService
     {
         var s = _mgr!.GetCurrentSession();
         Observe(s);
-        if (s is null) { _snap = null; _art.Clear(); return; }
+        // Windows reports a media session for anything that registers one, including apps that are not playback
+        // (a torrent shell shows its magnet-link text as a title). Only the sources the widget knows are shown.
+        if (s is null || !SupportedSource(s.SourceAppUserModelId)) { _snap = null; _art.Clear(); return; }
         var revision = Interlocked.Read(ref _revision);
 
         var props = await s.TryGetMediaPropertiesAsync();
@@ -121,9 +123,9 @@ public sealed class MediaMonitor(ILogger<MediaMonitor> log) : BackgroundService
     public async Task<bool> Control(string action, long? ms)
     {
         var s = _mgr?.GetCurrentSession();
-        if (s is null)
+        if (s is null || !SupportedSource(s.SourceAppUserModelId))
         {
-            // No session: send the media key instead (wakes up Spotify, for example).
+            // No session, or one the widget does not show: send the media key instead (wakes up Spotify, for example).
             if (action == "playpause") { Keys.Tap(Keys.VK_MEDIA_PLAY_PAUSE); return true; }
             return false;
         }
@@ -148,6 +150,13 @@ public sealed class MediaMonitor(ILogger<MediaMonitor> log) : BackgroundService
         try { await Poll(); } catch { }
         return ok;
     }
+
+    /// <summary>
+    /// The sources the media widget shows: the browsers and players it names. Windows hands out a media session to
+    /// anything that registers one, so an unknown app is treated as no playback rather than displayed raw (a torrent
+    /// client's shell reported a magnet-link fragment as its title). Adding a player is a one-line change here.
+    /// </summary>
+    internal static bool SupportedSource(string id) => MediaSources.Supported(id);
 
     private static string FriendlyApp(string id)
     {
